@@ -194,7 +194,7 @@ public class CMMLexer {
 		// 词法分析每行结束的标志
 		cmmText += "\n";
 		int length = cmmText.length();
-        //TODO 下面这三个变量的含义等待理解
+        //DO 下面这三个变量的含义等待理解,易理解
 		// switch状态值
 		int state = 0;    //0代表 1代表 2代表 3代表
 		// 记录token开始位置
@@ -273,7 +273,7 @@ public class CMMLexer {
 						}
 						//endregion
 
-						//region 这些是被省略掉的符号
+						//region 空白符、换行符、回车符、制表符忽略掉的，没有加入到token中
 						// 空白符
 						else if (String.valueOf(ch).equals(" ")) {
 							state = 0;

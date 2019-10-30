@@ -38,13 +38,13 @@ public class CMMParser {
 	//https://blog.csdn.net/weixin_39241397/article/details/79687789 一个博客
     //endregion
 
-	//region构造函数（没有啥显著的逻辑代码），getter 和setter
+
 	public CMMParser(ArrayList<Token> tokens) {
 		this.tokens = tokens;
 		if (tokens.size() != 0)
 			currentToken = tokens.get(0);
 	}
-
+	//region getter 和setter
 	public int getErrorNum() {
 		return errorNum;
 	}
@@ -116,6 +116,7 @@ public class CMMParser {
 		errorNum++;
 	}
 
+	//region 正真语法分析执行的函数
 	/**
 	 * statement: if_stm | while_stm | read_stm | write_stm | assign_stm |
 	 * declare_stm | for_stm;
@@ -130,6 +131,7 @@ public class CMMParser {
 			tempNode = assign_stm(false);
 		}
 		// 声明语句
+		//有整型、实数、布尔、字符串
 		else if (currentToken != null
 				&& (currentToken.getContent().equals(ConstVar.INT)
 						|| currentToken.getContent().equals(ConstVar.REAL) || currentToken
@@ -253,27 +255,27 @@ public class CMMParser {
 				currentToken.getLine());
 		forNode.add(statementNode);
 		if(hasBrace) {
-		while (currentToken != null) {
-			if (!currentToken.getContent().equals(ConstVar.RBRACE))
-				statementNode.add(statement());
-			else if (statementNode.getChildCount() == 0) {
-				forNode.remove(forNode.getChildCount() - 1);
-				statementNode.setContent("EmptyStm");
-				forNode.add(statementNode);
-				break;
-			} else {
-				break;
+			while (currentToken != null) {
+				if (!currentToken.getContent().equals(ConstVar.RBRACE))
+					statementNode.add(statement());
+				else if (statementNode.getChildCount() == 0) {
+					forNode.remove(forNode.getChildCount() - 1);
+					statementNode.setContent("EmptyStm");
+					forNode.add(statementNode);
+					break;
+				} else {
+					break;
+				}
 			}
-		}
-		// 匹配右大括号}
-		if (currentToken != null
-				&& currentToken.getContent().equals(ConstVar.RBRACE)) {
-			nextToken();
-		} else { // 报错
-			String error = " if条件语句缺少右大括号\"}\"" + "\n";
-			error(error);
-			forNode.add(new TreeNode(ConstVar.ERROR + "if条件语句缺少右大括号\"}\""));
-		}
+			// 匹配右大括号}
+			if (currentToken != null
+					&& currentToken.getContent().equals(ConstVar.RBRACE)) {
+				nextToken();
+			} else { // 报错
+				String error = " if条件语句缺少右大括号\"}\"" + "\n";
+				error(error);
+				forNode.add(new TreeNode(ConstVar.ERROR + "if条件语句缺少右大括号\"}\""));
+			}
 		} else {
 			statementNode.add(statement());
 		}
@@ -294,107 +296,7 @@ public class CMMParser {
         return treeNodeList;
     }
     
-    /**
-	 *获取TreeNode
-     */
-    private static TokenList getStmt(){
-        switch (getNextTokenType()) {
-        case Token.IF: 
-        {
-        	TokenList node = new TokenList(TokenList.IF_STMT);
-            consumeNextToken(Token.IF);
-            consumeNextToken(Token.LPARENT);
-            node.setLeft(getExp());
-            consumeNextToken(Token.RPARENT);
-            node.setMiddle(getStmt());
-            if (getNextTokenType() == Token.ELSE) {
-                consumeNextToken(Token.ELSE);
-                node.setRight(getStmt());
-            }
-            return node;
-        }
-        case Token.WHILE: {
-        	TokenList node = new TokenList(TokenList.WHILE_STMT);
-            consumeNextToken(Token.WHILE);
-            consumeNextToken(Token.LPARENT);
-            node.setLeft(getExp());
-            consumeNextToken(Token.RPARENT);
-            node.setMiddle(getStmt());
-            return node;
-        }
-        case Token.READ: 
-        {
-        	TokenList node = new TokenList(TokenList.READ_STMT);
-            consumeNextToken(Token.READ);
-            node.setLeft(variableName());
-            consumeNextToken(Token.SEMI);
-            return node;
-        }
-        case Token.WRITE:{
-        	TokenList node = new TokenList(TokenList.WRITE_STMT);
-            consumeNextToken(Token.WRITE);
-            node.setLeft(getExp());
-            consumeNextToken(Token.SEMI);
-            return node;
-        }
-        case Token.INT: 
-        case Token.REAL: {
-        	TokenList node = new TokenList(TokenList.DECLARE_STMT);
-            TokenList varNode = new TokenList(TokenList.VAR);
-            if (checkNextTokenType(Token.INT, Token.REAL)) {
-                current = iterator.next();
-                int type = current.getType();
-                if (type == Token.INT) {
-                    varNode.setDataType(Token.INT);
-                } else {//type == Token.REAL
-                    varNode.setDataType(Token.REAL);
-                }
-            } else {
-            }
-            if (checkNextTokenType(Token.ID)) {
-                current = iterator.next();
-                varNode.setValue(current.getValue());
-            } else {
-            }
-            if (getNextTokenType() == Token.ASSIGN) {
-                consumeNextToken(Token.ASSIGN);
-                node.setMiddle(getExp());
-            } else if (getNextTokenType() == Token.LBRACKET) {
-                consumeNextToken(Token.LBRACKET);
-                varNode.setLeft(getExp());
-                consumeNextToken(Token.RBRACKET);
-            }
-            consumeNextToken(Token.SEMI);
-            node.setLeft(varNode);
-            return node;
-        }
-        case Token.LBRACE:
-        {
-        	TokenList node = new TokenList(TokenList.NULL);
-            TokenList header = node;
-            TokenList temp = null;
-            consumeNextToken(Token.LBRACE);
-            while (getNextTokenType() != Token.RBRACE) {//允许语句块中没有语句
-                temp = getStmt();
-                node.setNext(temp);
-                node = temp;
-            }
-            consumeNextToken(Token.RBRACE);
-            return header;
-        }
-        case Token.ID: 
-        {
-        	TokenList node = new TokenList(TokenList.ASSIGN_STMT);
-            node.setLeft(variableName());
-            consumeNextToken(Token.ASSIGN);
-            node.setMiddle(getExp());
-            consumeNextToken(Token.SEMI);
-            return node;
-        }
-        default:
-        }
-		return null;
-    }
+
 	
 	/**
 	 * if_stm: IF LPAREN condition RPAREN LBRACE statement RBRACE (ELSE LBRACE
@@ -606,6 +508,7 @@ public class CMMParser {
 					currentToken.getLine());
 			nextToken();
 			// 判断是否是为数组赋值
+			//TODO 这个功能实在可以省掉，等看完代码去掉这个功能，食之无味，弃之不惜
 			if (currentToken != null
 					&& currentToken.getContent().equals(ConstVar.LBRACKET)) {
 				tempNode.add(array());
@@ -684,19 +587,23 @@ public class CMMParser {
 	 * @param isFor  是否是在for循环中调用
 	 * @return TreeNode
 	 */
+	//赋值语句的调用，
 	private final TreeNode assign_stm(boolean isFor) {
 		// assign函数返回结点的根结点
 		TreeNode assignNode = new TreeNode("运算符", ConstVar.ASSIGN, currentToken
-				.getLine());
-		TreeNode idNode = new TreeNode("标识符", currentToken.getContent(),
+				.getLine());//运算符，等号，行数
+		TreeNode idNode = new TreeNode("标识符", currentToken.getContent(),//content是标识符的内容
 				currentToken.getLine());
 		assignNode.add(idNode);
-		nextToken();
+		nextToken();//更新了index和currentToken两个值
+		//上面只是往队列中加入了一个标识符
+
 		// 判断是否是为数组赋值
 		if (currentToken != null
 				&& currentToken.getContent().equals(ConstVar.LBRACKET)) {
 			idNode.add(array());
 		}
+
 		// 匹配赋值符号=
 		if (currentToken != null
 				&& currentToken.getContent().equals(ConstVar.ASSIGN)) {
@@ -706,6 +613,7 @@ public class CMMParser {
 			error(error);
 			return new TreeNode(ConstVar.ERROR + "赋值语句缺少\"=\"");
 		}
+
 		// expression
 		assignNode.add(condition());
 		// 如果不是在for循环语句中调用声明语句,则匹配分号
@@ -777,18 +685,19 @@ public class CMMParser {
 			if (currentToken != null
 					&& currentToken.getContent().equals(ConstVar.LBRACKET)) {
 				idNode.add(array());
-			} else if (currentToken != null
+			}//等号，分号，逗号
+			else if (currentToken != null
 					&& !currentToken.getContent().equals(ConstVar.ASSIGN)
 					&& !currentToken.getContent().equals(ConstVar.SEMICOLON)
 					&& !currentToken.getContent().equals(ConstVar.COMMA)) {
 				String error = " 声明语句出错,标识符后出现不正确的token" + "\n";
 				error(error);
-				root
-						.add(new TreeNode(ConstVar.ERROR
-								+ "声明语句出错,标识符后出现不正确的token"));
+				root.add(new TreeNode(ConstVar.ERROR + "声明语句出错,标识符后出现不正确的token"));
 				nextToken();
+				//如果后面是这些符号的话，并不往下读取，而是由合适的地方重新解读这些token
 			}
-		} else { // 报错
+		}
+		else { // 报错
 			String error = " 声明语句中标识符出错" + "\n";
 			error(error);
 			root.add(new TreeNode(ConstVar.ERROR + "声明语句中标识符出错"));
@@ -856,6 +765,7 @@ public class CMMParser {
 	 * 
 	 * @return TreeNode
 	 */
+	//term有代数式的意思
 	private final TreeNode term() {
 		// 记录factor生成的结点
 		TreeNode tempNode = factor();
@@ -879,6 +789,7 @@ public class CMMParser {
 	 * 
 	 * @return TreeNode
 	 */
+	//算术因子
 	private final TreeNode factor() {
 		// 保存要返回的结点
 		TreeNode tempNode = null;
@@ -905,13 +816,16 @@ public class CMMParser {
 					currentToken.getLine());
 			nextToken();
 			// array
+			//region标识符可以是单独的标识符，也可以是代表数组的
 			if (currentToken != null
 					&& currentToken.getContent().equals(ConstVar.LBRACKET)) {
 				tempNode.add(array());
 			}
+			//endregion
 		} else if (currentToken != null
 				&& currentToken.getContent().equals(ConstVar.LPAREN)) { // 匹配左括号(
 			nextToken();
+			//算数因子以左括号开始话，就是还是一个表达式
 			tempNode = expression();
 			// 匹配右括号)
 			if (currentToken != null
@@ -928,6 +842,7 @@ public class CMMParser {
 			tempNode = new TreeNode("字符串", currentToken.getContent(),
 					currentToken.getLine());
 			nextToken();
+			//如果是双引号开始话，下面开始就是一个字符串，可以直接略过
 			// 匹配另外一个双引号
 			nextToken();
 		} else { // 报错
@@ -958,6 +873,7 @@ public class CMMParser {
 			error(error);
 			return new TreeNode(ConstVar.ERROR + "缺少左中括号\"[\"");
 		}
+		//没有将 [ 加入TreeNode中
 		// 调用expression函数匹配表达式
 		tempNode = expression();
 		if (currentToken != null
@@ -1023,6 +939,109 @@ public class CMMParser {
 			return new TreeNode(ConstVar.ERROR + "乘除符号出错");
 		}
 		return tempNode;
+	}
+
+	//endregion
+	/**
+	 *获取TreeNode
+	 */
+	private static TokenList getStmt(){
+		switch (getNextTokenType()) {
+			case Token.IF:
+			{
+				TokenList node = new TokenList(TokenList.IF_STMT);
+				consumeNextToken(Token.IF);
+				consumeNextToken(Token.LPARENT);
+				node.setLeft(getExp());
+				consumeNextToken(Token.RPARENT);
+				node.setMiddle(getStmt());
+				if (getNextTokenType() == Token.ELSE) {
+					consumeNextToken(Token.ELSE);
+					node.setRight(getStmt());
+				}
+				return node;
+			}
+			case Token.WHILE: {
+				TokenList node = new TokenList(TokenList.WHILE_STMT);
+				consumeNextToken(Token.WHILE);
+				consumeNextToken(Token.LPARENT);
+				node.setLeft(getExp());
+				consumeNextToken(Token.RPARENT);
+				node.setMiddle(getStmt());
+				return node;
+			}
+			case Token.READ:
+			{
+				TokenList node = new TokenList(TokenList.READ_STMT);
+				consumeNextToken(Token.READ);
+				node.setLeft(variableName());
+				consumeNextToken(Token.SEMI);
+				return node;
+			}
+			case Token.WRITE:{
+				TokenList node = new TokenList(TokenList.WRITE_STMT);
+				consumeNextToken(Token.WRITE);
+				node.setLeft(getExp());
+				consumeNextToken(Token.SEMI);
+				return node;
+			}
+			case Token.INT:
+			case Token.REAL: {
+				TokenList node = new TokenList(TokenList.DECLARE_STMT);
+				TokenList varNode = new TokenList(TokenList.VAR);
+				if (checkNextTokenType(Token.INT, Token.REAL)) {
+					current = iterator.next();
+					int type = current.getType();
+					if (type == Token.INT) {
+						varNode.setDataType(Token.INT);
+					} else {//type == Token.REAL
+						varNode.setDataType(Token.REAL);
+					}
+				} else {
+				}
+				if (checkNextTokenType(Token.ID)) {
+					current = iterator.next();
+					varNode.setValue(current.getValue());
+				} else {
+				}
+				if (getNextTokenType() == Token.ASSIGN) {
+					consumeNextToken(Token.ASSIGN);
+					node.setMiddle(getExp());
+				} else if (getNextTokenType() == Token.LBRACKET) {
+					consumeNextToken(Token.LBRACKET);
+					varNode.setLeft(getExp());
+					consumeNextToken(Token.RBRACKET);
+				}
+				consumeNextToken(Token.SEMI);
+				node.setLeft(varNode);
+				return node;
+			}
+			case Token.LBRACE:
+			{
+				TokenList node = new TokenList(TokenList.NULL);
+				TokenList header = node;
+				TokenList temp = null;
+				consumeNextToken(Token.LBRACE);
+				while (getNextTokenType() != Token.RBRACE) {//允许语句块中没有语句
+					temp = getStmt();
+					node.setNext(temp);
+					node = temp;
+				}
+				consumeNextToken(Token.RBRACE);
+				return header;
+			}
+			case Token.ID:
+			{
+				TokenList node = new TokenList(TokenList.ASSIGN_STMT);
+				node.setLeft(variableName());
+				consumeNextToken(Token.ASSIGN);
+				node.setMiddle(getExp());
+				consumeNextToken(Token.SEMI);
+				return node;
+			}
+			default:
+		}
+		return null;
 	}
 
 	/**
@@ -1279,6 +1298,7 @@ public class CMMParser {
 	 * 
 	 * @return TreeNode
 	 */
+	//等于不等于大于小于这些比较符号
 	private final TreeNode comparison_op() {
 		// 保存要返回的结点
 		TreeNode tempNode = null;
