@@ -35,7 +35,7 @@ public class TreeNode extends DefaultMutableTreeNode {
 		this.lineNum = lineNum;
 		nodeKind = kind;
 	}
-
+	//region setter和getter
 	public String getNodeKind() {
 		return nodeKind;
 	}
@@ -60,7 +60,7 @@ public class TreeNode extends DefaultMutableTreeNode {
 		this.content = content;
 		setUserObject(content);
 	}
-
+    //endregion
 	/**
 	 * 为该结点添加孩子结点
 	 * @param childNode

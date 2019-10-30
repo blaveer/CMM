@@ -89,10 +89,10 @@ public class Token {
 
 	// 构造方法
 	public Token(int l, int c, String k, String con) {
-		this.line = l;
-		this.culomn = c;
-		this.kind = k;
-		this.content = con;
+		this.line = l;  //行
+		this.culomn = c; //列
+		this.kind = k;   //Token的种类
+		this.content = con;//内容
 	}
 
 	public Token(int lineNo) {
@@ -110,7 +110,7 @@ public class Token {
 		this.lineNo = lineNo;
 	}
 
-	// getter和setter
+	// region getter和setter
 	public String getKind() {
 		return kind;
 	}
@@ -174,6 +174,7 @@ public class Token {
 	public void setLineNo(int lineNo) {
 		this.lineNo = lineNo;
 	}
+	//endregion
 
 	public String toStringWithLine() {
 		switch (type) {

@@ -32,6 +32,7 @@ import javax.swing.undo.UndoManager;
 
 
 public class CompilerFrame extends JFrame {
+    //region 查看语法分析时候合并的
 	//region 暂时不用
 	private static final long serialVersionUID = 14L;
 	//窗体菜单栏 
@@ -125,9 +126,10 @@ public class CompilerFrame extends JFrame {
 	private JButton searchButton;
 	private JButton helpButton;
 	//endregion
-	private JPanel fileScanPanel;
-	
-	//文件过滤器 
+	private JPanel fileScanPanel;//中间的那个面板，用来显示代码区，支持多个文件同时开发
+
+
+	//region文件过滤器
 	FileFilter filter = new FileFilter() {
 		public String getDescription() {
 			return "CMM程序文件(*.cmm)";
@@ -141,7 +143,8 @@ public class CompilerFrame extends JFrame {
 			return false;
 		}
 	};
-	
+	//endregion
+
 	//保存要查找的字符串
 	private static String findStr = null;
 	//当前文本编辑区字符串 
@@ -159,7 +162,7 @@ public class CompilerFrame extends JFrame {
 	private CMMSemanticAnalysis semanticAnalysis;
 	
 	//词法分析语法分析结果显示面板 
-	private JTabbedPane tabbedPanel;
+	private JTabbedPane tabbedPanel;   //右侧词法语法语义分析的三个面板，Tab
 	//用户输入 
 	private String userInput;
 	
@@ -479,9 +482,9 @@ public class CompilerFrame extends JFrame {
 		proAndConPanel.add(new JScrollPane(consoleArea), "控制台");
 		proAndConPanel.add(new JScrollPane(problemArea), "错误列表");
 
-		editPanel.add(editLabelPanel);
-		editPanel.add(editTabbedPane);
-		editPanel.add(proAndConPanel);
+		editPanel.add(editLabelPanel);//头部
+		editPanel.add(editTabbedPane);//代码区
+		editPanel.add(proAndConPanel);//输出区域，错误输出区域
 		editLabelPanel.setBounds(0, 0, 815, 15);
 		editTabbedPane.setBounds(0, 15, 815, 462);
 		proAndConPanel.setBounds(0, 475, 815, 160);
@@ -839,25 +842,27 @@ public class CompilerFrame extends JFrame {
 			// 设置字体
 			lexerTree.setFont(treeFont);
 
-			tabbedPanel.setComponentAt(0, new JScrollPane(lexerTree));
-			tabbedPanel.setSelectedIndex(0);
+			tabbedPanel.setComponentAt(0, new JScrollPane(lexerTree));   //每次运行之后，都将面板重新生成
+			tabbedPanel.setSelectedIndex(0);//单击词法分析之后在右侧显示词法分析的树
+
 			problemArea.setText("**********词法分析结果**********\n");
 			problemArea.append(lexer.getErrorInfo());
 			problemArea.append("该程序中共有" + lexer.getErrorNum() + "个词法错误！\n");
 			proAndConPanel.setSelectedIndex(1);
 		}
 	}
-	//region 暂时不用
+    //endregion
+
 	// 语法分析：对程序的语法进行分析，并显示语法树
 	public TreeNode parse() {
-		lex();
+		lex();    //语法分析前面，先运行词法分析
 		if (lexer.getErrorNum() != 0) {
 			JOptionPane.showMessageDialog(new JPanel(),
 					"词法分析出现错误！请先修改程序再进行语法分析！", "语法分析",
-					JOptionPane.ERROR_MESSAGE);
+					JOptionPane.ERROR_MESSAGE);//关于JOptionPane,就是一个弹窗
 			return null;
 		}
-		parser = new CMMParser(lexer.getTokens());
+		parser = new CMMParser(lexer.getTokens());//这个事token，不包含注释等
 		parser.setIndex(0);
 		parser.setErrorInfo("");
 		parser.setErrorNum(0);
@@ -886,10 +891,9 @@ public class CompilerFrame extends JFrame {
 		proAndConPanel.setSelectedIndex(1);
 		return root;
 	}
-
+    //region 暂时不用
 	//生成中间代码
-	public void generateCode()
-	{
+	public void generateCode() {
 		StyleEditor textArea = map.get(editTabbedPane.getSelectedComponent());
 		String text = textArea.getText();
 		LinkedList<FourCode> codes;
@@ -920,7 +924,7 @@ public class CompilerFrame extends JFrame {
 		rowNum = 0;
 		presentMaxRow = 0;
 		index = new int[] { 0, 0 };
-		TreeNode node = parse();
+		TreeNode node = parse();//由于语法分析中包含词法分析，就不执行词法分析了
 		//generateCode();
 		if (lexer.getErrorNum() != 0) {
 			return;
@@ -932,6 +936,7 @@ public class CompilerFrame extends JFrame {
 		}
 	}
 
+	//region 新建、打开、保存文件
 	// 新建
 	private void create(String filename) {
 		if (filename == null) {
@@ -1025,7 +1030,9 @@ public class CompilerFrame extends JFrame {
 				}
 			}
 	}
+    //endregion
 
+    //region 撤销、重做、复制、剪切、粘贴、查找、全选、删除
 	// 撤销
 	private void undo() {
 		if (undo.canUndo()) {
@@ -1107,7 +1114,7 @@ public class CompilerFrame extends JFrame {
 		StyleEditor temp = map.get(editTabbedPane.getSelectedComponent());
 		temp.replaceSelection("");
 	}
-
+    //endregion
 	
 
 	private void getCurrenRowAndCol() {

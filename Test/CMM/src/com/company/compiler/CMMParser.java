@@ -15,7 +15,7 @@ import com.company.model.TreeNode;
  * 
  */
 public class CMMParser {
-
+    //region 过程中用到的一些变量
 	// 词法分析得到的tokens向量
 	private ArrayList<Token> tokens;
 	// 标记当前token的游标
@@ -30,10 +30,15 @@ public class CMMParser {
 	private static TreeNode root;
 	//TreeNode List
 	private static LinkedList<TokenList> treeNodeList;
+	//下面这个初始化，放在构造函数中整个代码的就够会更好
 	private static Token current = null;
 	//token迭代器
 	private static ListIterator<Token> iterator = null;
-	
+	//关于ListIterator的一些理解：①课双向移动②可结合next插入元素
+	//https://blog.csdn.net/weixin_39241397/article/details/79687789 一个博客
+    //endregion
+
+	//region构造函数（没有啥显著的逻辑代码），getter 和setter
 	public CMMParser(ArrayList<Token> tokens) {
 		this.tokens = tokens;
 		if (tokens.size() != 0)
@@ -63,6 +68,7 @@ public class CMMParser {
 	public void setIndex(int index) {
 		this.index = index;
 	}
+	//endregion
 
 	/**
 	 * 语法分析主方法

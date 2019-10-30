@@ -30,6 +30,7 @@ public class CMMLexer {
     private static int currentInt;
     private static char currentChar;
     private static int lineNo;
+
 	//region set、get函数
 	public boolean isNotation() {
 		return isNotation;
@@ -79,6 +80,8 @@ public class CMMLexer {
 	 * @return
 	 */
 	//endregion
+
+    //region 几个功能函数
 	private static boolean isLetter(char c) {
 		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
 			return true;
@@ -135,7 +138,7 @@ public class CMMLexer {
 	 * @return 布尔值
 	 */
 	private static boolean matchID(String input) {
-		if (input.matches("^\\w+$") && !input.endsWith("_")
+		if (input.matches("^\\w+$") && !input.endsWith("_") //两个斜杠是因为在“”中要转义
 				&& input.substring(0, 1).matches("[A-Za-z]"))
 			return true;
 		else
@@ -173,6 +176,8 @@ public class CMMLexer {
 		return str.length();
 	}
 
+	//endregion
+
 	/**
 	 * 分析一行CMM程序，并返回分析一行得到的TreeNode
 	 * 
@@ -189,8 +194,9 @@ public class CMMLexer {
 		// 词法分析每行结束的标志
 		cmmText += "\n";
 		int length = cmmText.length();
+        //TODO 下面这三个变量的含义等待理解
 		// switch状态值
-		int state = 0;
+		int state = 0;    //0代表 1代表 2代表 3代表
 		// 记录token开始位置
 		int begin = 0;
 		// 记录token结束位置
@@ -202,13 +208,14 @@ public class CMMLexer {
 				if (ch == '(' || ch == ')' || ch == ';' || ch == '{'
 						|| ch == '}' || ch == '[' || ch == ']' || ch == ','
 						|| ch == '+' || ch == '-' || ch == '*' || ch == '/'
-						|| ch == '=' || ch == '<' || ch == '>' || ch == '"'
-						|| isLetter(ch) || isDigit(ch)
+						|| ch == '=' || ch == '<' || ch == '>' || ch == '"'   //这些是运算符
+						|| isLetter(ch) || isDigit(ch)                    //这些事数字、字符
 						|| String.valueOf(ch).equals(" ")
-						|| String.valueOf(ch).equals("\n")
+						|| String.valueOf(ch).equals("\n")                        //其他无关符号，
 						|| String.valueOf(ch).equals("\r")
 						|| String.valueOf(ch).equals("\t")) {
 					switch (state) {
+                    //region case0
 					case 0:
 						// 分隔符直接打印
 						if (ch == '(' || ch == ')' || ch == ';' || ch == '{'
@@ -221,6 +228,8 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, i + 1, "分隔符",
 									String.valueOf(ch)));
 						}
+
+						//region 一些运算符
 						// 加号+
 						else if (ch == '+')
 							state = 1;
@@ -262,6 +271,9 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, begin, "分隔符",
 									ConstVar.DQ));
 						}
+						//endregion
+
+						//region 这些是被省略掉的符号
 						// 空白符
 						else if (String.valueOf(ch).equals(" ")) {
 							state = 0;
@@ -286,8 +298,12 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, i + 1, "制表符",
 									"\t"));
 						}
+						//endregion
+
 						break;
-					case 1:
+					//endregion
+                    //region case1
+					case 1:  //当前一个符号是+时候调到这里，将+加入队列中，并且将这个字符以state0重新解读
 						node.add(new TreeNode("运算符 ： " + ConstVar.PLUS));
 						tokens.add(new Token(lineNum, i, "运算符", ConstVar.PLUS));
 						displayTokens.add(new Token(lineNum, i, "运算符",
@@ -295,7 +311,9 @@ public class CMMLexer {
 						i--;
 						state = 0;
 						break;
-					case 2:
+					//endregion
+                    //region case2
+					case 2://当前一个符号是-时候调到这里，由于减号并没有直接接入token，所以如果前面是数字或者标识符这些，就将其作为运算符加入token，并且重新扫描该字符，也就是减号后面的字符
 						String temp = tokens.get(tokens.size() - 1).getKind();
 						String c = tokens.get(tokens.size() - 1).getContent();
 						if (temp.equals("整数") || temp.equals("标识符")
@@ -308,15 +326,19 @@ public class CMMLexer {
 									ConstVar.MINUS));
 							i--;
 							state = 0;
-						} else if (String.valueOf(ch).equals("\n")) {
+						} //负号不能作为一行代码的开头，在这个语言中没有实际的意义，就将其认定为错误加入token，可能会在语法分析中再次分析
+						else if (String.valueOf(ch).equals("\n")) {
 							displayTokens.add(new Token(lineNum, i - 1, "错误",
 									ConstVar.MINUS));
-						} else {
+						}//如果不是以上两种情况，就可以认定负号是用来判度负数的
+						else {
 							begin = i - 1;
 							state = 8;
 						}
 						break;
-					case 3:
+					//endregion
+                    //region case3
+					case 3://当前面是*号，并且不是注释的时候跳到这里，因为如果监测出来是/*这样的话，这里也不会执行。在不是注释的情况下，*的作用就是用来作为运算符
 						if (ch == '/') {
 							errorNum++;
 							errorInfo += "    ERROR:第 " + lineNum + " 行,第 " + i
@@ -326,7 +348,8 @@ public class CMMLexer {
 									+ ConstVar.TIMES + "\"使用错误"));
 							displayTokens.add(new Token(lineNum, i, "错误",
 									cmmText.substring(i - 1, i + 1)));
-						} else {
+						}//这里认定*是运算符，并且加入token队列，重新扫描该字符，此时这行代码的扫描已经到*后面的那个字符了，这里在下次扫描中重新扫描这个字符
+						else {
 							node.add(new TreeNode("运算符 ： " + ConstVar.TIMES));
 							tokens.add(new Token(lineNum, i, "运算符",
 									ConstVar.TIMES));
@@ -336,7 +359,10 @@ public class CMMLexer {
 						}
 						state = 0;
 						break;
-					case 4:
+					//endregion
+                    //region case4
+					case 4://当上一个字符是/的时候调到这里，/的作用较多
+                        //如果/后面紧接着还是/号，就可以认定这一行后面的代码全是注释了，并且直接将i的值符到/n前面，经过for的叠加，也就是下一个就扫描换行符，直接结束这一行
 						if (ch == '/') {
 							node.add(new TreeNode("单行注释 //"));
 							displayTokens.add(new Token(lineNum, i, "单行注释符号",
@@ -344,15 +370,17 @@ public class CMMLexer {
 							begin = i + 1;
 							displayTokens.add(new Token(lineNum, i, "注释",
 									cmmText.substring(begin, length - 1)));
-							i = length - 2;
+							i = length - 2;  //这里直接让i跳到末尾了
 							state = 0;
-						} else if (ch == '*') {
+						} //如果/后面是*，就可以认为是多行注释的开始，接下来的一段时间都不会执行这个switch了，直到结束，这里将isNotation变量置为true,代表着注释状态开始了
+						else if (ch == '*') {
 							node.add(new TreeNode("多行注释 /*"));
 							displayTokens.add(new Token(lineNum, i, "多行注释开始符号",
 									"/*"));
 							begin = i + 1;
 							isNotation = true;
-						} else {
+						}//如果不是注释，那么/的作用也就是除法了
+						else {
 							node.add(new TreeNode("运算符 ： " + ConstVar.DIVIDE));
 							tokens.add(new Token(lineNum, i, "运算符",
 									ConstVar.DIVIDE));
@@ -362,7 +390,9 @@ public class CMMLexer {
 							state = 0;
 						}
 						break;
-					case 5:
+					//endregion
+                    //region case5
+					case 5://如果前面是=则跳到这里，如果这个符号也是=，就可以认定为是等于的判断符号
 						if (ch == '=') {
 							node.add(new TreeNode("运算符 ： " + ConstVar.EQUAL));
 							tokens.add(new Token(lineNum, i, "运算符",
@@ -370,7 +400,8 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, i, "运算符",
 									ConstVar.EQUAL));
 							state = 0;
-						} else {
+						}//如果这个符号不是=，则可以认定为前一个符号的作用仅仅是赋值符号，那么，将上一个符号加入token，重新读取这个符号
+						else {
 							state = 0;
 							node.add(new TreeNode("运算符 ： " + ConstVar.ASSIGN));
 							tokens.add(new Token(lineNum, i, "运算符",
@@ -380,7 +411,10 @@ public class CMMLexer {
 							i--;
 						}
 						break;
-					case 6:
+                    //endregion
+                    //region case6
+					case 6://如果上一个符号是<的时候跳到这，
+                        //如果是>，则可以和上一个符号一个认定为不等于，并且将这两个符号一起加入token，扫描下一个字符
 						if (ch == '>') {
 							node.add(new TreeNode("运算符 ： " + ConstVar.NEQUAL));
 							tokens.add(new Token(lineNum, i, "运算符",
@@ -388,36 +422,44 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, i, "运算符",
 									ConstVar.NEQUAL));
 							state = 0;
-						} else {
+						} //如果这个符号不是>,由于该语言也并没有实现<=这样的符号，所以此时就可以认定其是小于号了，将小于号加入token，并且重新扫描这个符号
+						else {
 							state = 0;
 							node.add(new TreeNode("运算符 ： " + ConstVar.LT));
-							tokens
-									.add(new Token(lineNum, i, "运算符",
+							tokens.add(new Token(lineNum, i, "运算符",
 											ConstVar.LT));
 							displayTokens.add(new Token(lineNum, i, "运算符",
 									ConstVar.LT));
 							i--;
 						}
 						break;
-					case 7:
+					//endregion
+					//region case7
+					case 7://当上一个符号是字母的时候跳到这里，由于标识符只能只能以字符开头，这就节省了下划线的麻烦，在扫描到字母的时候，已经用begin记录了其开始的位置
+                        //如果这个还是字母或者数字，,因为_被装在isLetter中了，值于在检查不能下划线开头的时候是在matchID函数中进行的
 						if (isLetter(ch) || isDigit(ch)) {
 							state = 7;
-						} else {
+						}
+						//如果不是字母或者数字了，也就意味着标识符结束了
+						else {
 							end = i;
 							String id = cmmText.substring(begin, end);
+							//如果是关键字，巴拉巴拉小魔仙
 							if (isKey(id)) {
 								node.add(new TreeNode("关键字 ： " + id));
 								tokens.add(new Token(lineNum, begin + 1, "关键字",
 										id));
 								displayTokens.add(new Token(lineNum, begin + 1,
 										"关键字", id));
-							} else if (matchID(id)) {
+							}//如果是标识符，就加入token
+							else if (matchID(id)) {
 								node.add(new TreeNode("标识符 ： " + id));
 								tokens.add(new Token(lineNum, begin + 1, "标识符",
 										id));
 								displayTokens.add(new Token(lineNum, begin + 1,
 										"标识符", id));
-							} else {
+							}//如果不是上述，那估计就是下划线开头或者或者数字结尾了
+							else {
 								errorNum++;
 								errorInfo += "    ERROR:第 " + lineNum + " 行,第 "
 										+ (begin + 1) + " 列：" + id + "是非法标识符\n";
@@ -426,14 +468,19 @@ public class CMMLexer {
 								displayTokens.add(new Token(lineNum, begin + 1,
 										"错误", id));
 							}
-							i--;
+							//重新扫描这个字符
+							i--;      //代表使用这个字符继续在state0中继续执行
 							state = 0;
 						}
 						break;
-					case 8:
+					//endregion
+	                //region case8
+					case 8://如果是上一个是数字，就到这
 						if (isDigit(ch) || String.valueOf(ch).equals(".")) {
 							state = 8;
-						} else {
+						}//如果一直是数字或者小数点，就一直徘徊在这
+						else {
+						    //如果在数字之后紧接着字母了，那必然是报错的
 							if (isLetter(ch)) {
 								errorNum++;
 								errorInfo += "    ERROR:第 " + lineNum + " 行,第 "
@@ -443,10 +490,12 @@ public class CMMLexer {
 								displayTokens.add(new Token(lineNum, i, "错误",
 										cmmText.substring(begin, find(begin,
 												cmmText) + 1)));
-								i = find(begin, cmmText);
-							} else {
+								i = find(begin, cmmText);//这里用这个函数到还能理解，可以跳过这一片错误的重灾区，最小程度上影响下面的代码
+							}//可能是情况太多的原因，这里仅仅列举了字母的错误，反正不是字母和数字就跳到下面
+							else {
 								end = i;
 								String id = cmmText.substring(begin, end);
+								//不包含小数点就不是小数
 								if (!id.contains(".")) {
 									if (matchInteger(id)) {
 										node.add(new TreeNode("整数    ： " + id));
@@ -464,7 +513,8 @@ public class CMMLexer {
 										displayTokens.add(new Token(lineNum,
 												begin + 1, "错误", id));
 									}
-								} else {
+								}
+								else {
 									if (matchReal(id)) {
 										node.add(new TreeNode("实数    ： " + id));
 										tokens.add(new Token(lineNum,
@@ -482,12 +532,14 @@ public class CMMLexer {
 												begin + 1, "错误", id));
 									}
 								}
-								i = find(i, cmmText);
+								i = find(i, cmmText);    //TODO 这个函数的作用可能在输入框那里，有待考究，刚才在尝试的好时候发现如果没有这个函数，第一行语句结束后，按分号会显示到下一行
 							}
 							state = 0;
 						}
 						break;
-					case 9:
+					//endregion
+                    //region case9
+					case 9://这个就很见到了
 						node.add(new TreeNode("运算符 ： " + ConstVar.GT));
 						tokens.add(new Token(lineNum, i, "运算符", ConstVar.GT));
 						displayTokens.add(new Token(lineNum, i, "运算符",
@@ -495,7 +547,9 @@ public class CMMLexer {
 						i--;
 						state = 0;
 						break;
-					case 10:
+					//endregion
+                    //region case10
+					case 10://再遇到“就结束，并且将“加入分隔符
 						if (ch == '"') {
 							end = i;
 							String string = cmmText.substring(begin, end);
@@ -510,7 +564,8 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, end + 1,
 									"分隔符", ConstVar.DQ));
 							state = 0;
-						} else if (i == length - 1) {
+						} //如果到结尾了，就报缺少引号的错误
+						else if (i == length - 1) {
 							String string = cmmText.substring(begin);
 							errorNum++;
 							errorInfo += "    ERROR:第 " + lineNum + " 行,第 "
@@ -521,8 +576,11 @@ public class CMMLexer {
 							displayTokens.add(new Token(lineNum, i + 1, "错误",
 									string));
 						}
+						//这里完全可以再加一个else{state=10；}，但没有也行
+					//endregion
 					}
-				} else {
+				}
+				else {//不可识别的标识符
 					if (ch > 19967 && ch < 40870 || ch == '\\' || ch == '~'
 							|| ch == '`' || ch == '|' || ch == '、' || ch == '^'
 							|| ch == '?' || ch == '&' || ch == '^' || ch == '%'
@@ -541,23 +599,27 @@ public class CMMLexer {
 									String.valueOf(ch)));
 					}
 				}
-			} else {
+			}
+			else {//处于多行注释状态
 				if (ch == '*') {
 					state = 3;
-				} else if (ch == '/' && state == 3) {
+				}
+				else if (ch == '/' && state == 3) {
 					node.add(new TreeNode("多行注释 */"));
 					displayTokens.add(new Token(lineNum, begin + 1, "注释",
 							cmmText.substring(begin, i - 1)));
 					displayTokens.add(new Token(lineNum, i, "多行注释结束符号", "*/"));
 					state = 0;
 					isNotation = false;
-				} else if (i == length - 2) {
+				}
+				else if (i == length - 2) {
 					displayTokens.add(new Token(lineNum, begin + 1, "注释",
 							cmmText.substring(begin, length - 1)));
 					displayTokens.add(new Token(lineNum, length - 1, "换行符",
 							"\n"));
 					state = 0;
-				} else {
+				}
+				else {
 					state = 0;
 				}
 			}
@@ -587,15 +649,15 @@ public class CMMLexer {
 			try {
 				eachLine = reader.readLine();
 				if (eachLine != null) {
-					if (isNotation() && !eachLine.contains("*/")) {
+					if (isNotation() && !eachLine.contains("*/")) {      //如果是已经是多行注释，且没有结尾
 						eachLine += "\n";
 						TreeNode temp = new TreeNode(eachLine);
-						temp.add(new TreeNode("多行注释"));
+						temp.add(new TreeNode("多行注释"));   //多行注释得内容下只有一个子节点，就是多行注释这个词
 						displayTokens.add(new Token(lineNum, 1, "注释", eachLine
 								.substring(0, eachLine.length() - 1)));
 						displayTokens.add(new Token(lineNum,
-								eachLine.length() - 1, "换行符", "\n"));
-						root.add(temp);
+								eachLine.length() - 1, "换行符", "\n"));  //TODO 暂时没理解这个东西的作用，有几个猜想，等待后面验证
+						root.add(temp); //以每一行为单位加到根节点中
 						lineNum++;
 						continue;
 					} else {
