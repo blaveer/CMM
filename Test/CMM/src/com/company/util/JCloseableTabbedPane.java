@@ -24,6 +24,7 @@ public class JCloseableTabbedPane extends JTabbedPane implements Serializable {
 		init();
 	}
 
+	//region 没用到的
 	public JCloseableTabbedPane(int tabPlacement) {
 		super(tabPlacement);
 		init();
@@ -33,6 +34,7 @@ public class JCloseableTabbedPane extends JTabbedPane implements Serializable {
 		super(tabPlacement, tabLayoutPolicy);
 		init();
 	}
+	//endregion
 
 	protected void init() {
 		addMouseListener(new DefaultMouseAdapter());

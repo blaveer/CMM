@@ -6,11 +6,11 @@ import java.math.BigDecimal;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import com.company.FrameT.CompilerFrame;
 import com.company.model.ConstVar;
 import com.company.model.SymbolTable;
 import com.company.model.SymbolTableElement;
 import com.company.model.TreeNode;
-import com.vincent.main.CompilerFrame;
 
 
 
@@ -34,6 +34,7 @@ public class CMMSemanticAnalysis extends Thread {
 
 	public CMMSemanticAnalysis(TreeNode root) {
 		this.root = root;
+		//由于不规范的原因，在声明变量的时候，很多都直接赋值初始化了，这样写很不好。得改。
 	}
 
 	public void error(String error, int line) {
@@ -102,7 +103,7 @@ public class CMMSemanticAnalysis extends Thread {
 	 */
 	public void run() {
 		table.removeAll();
-		statement(root);
+		statement(root);//这个函数对于外界的作用就是填充了符号表
 		CompilerFrame.problemArea.append("\n");
 		CompilerFrame.problemArea.append("**********语义分析结果**********\n");
 		if (errorNum != 0) {
@@ -175,7 +176,8 @@ public class CMMSemanticAnalysis extends Thread {
 			// 变量值
 			String name = temp.getContent();
 			// 判断变量是否已经被声明
-			if (table.getCurrentLevel(name, level) == null) {
+			if (table.getCurrentLevel(name, level) == null) {//level是用来标识变量的作用域的,初始化为0了
+				//关于上面那个函数，其作用就是遍历符号表，看看有没有一样的，有的话就是声明过了
 				if (temp.getChildCount() == 0) {
 					SymbolTableElement element = new SymbolTableElement(temp
 							.getContent(), content, temp.getLineNum(), level);
@@ -425,7 +427,8 @@ public class CMMSemanticAnalysis extends Thread {
 						index++;
 					}
 					table.add(element);
-				} else { // 声明数组
+				}
+				else { // 声明数组
 					SymbolTableElement element = new SymbolTableElement(temp
 							.getContent(), content, temp.getLineNum(), level);
 					String sizeValue = temp.getChildAt(0).getContent();
@@ -1056,7 +1059,8 @@ public class CMMSemanticAnalysis extends Thread {
 				error(error, root.getLineNum());
 				return null;
 			}
-		} else if (root.getNodeKind().equals("标识符")) {
+		}
+		else if (root.getNodeKind().equals("标识符")) {
 			// 审查标识符
 			if (checkID(root, level)) {
 				SymbolTableElement temp = table.getAllLevel(root.getContent(),

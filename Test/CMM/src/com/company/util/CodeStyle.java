@@ -28,6 +28,7 @@ public class CodeStyle {
 	private static final String FAMILY = "Courier New";
 	// 字体大小
 	private static final int SIZE = 14;
+
 	// 注释颜色
 	private static final Color COMMENT_FOREGROUND = new Color(57, 150, 48);
 	// 关键字颜色
@@ -38,6 +39,7 @@ public class CodeStyle {
 	private static final Color STRING_FOREGROUND = new Color(255, 0, 0);
 	// 默认字体颜色
 	private static final Color DEFAULT_FORGROUND = new Color(0, 0, 0);
+
 	// 样式上下文
 	private static final StyleContext styleContext = new StyleContext();
 	// 第一行字符的Y坐标
@@ -62,6 +64,10 @@ public class CodeStyle {
 		// 添加注释样式
 		addStyle("comment", COMMENT_FOREGROUND);
 		// 添加关键字
+		initKeyWords();
+	}
+
+	private void initKeyWords(){
 		keywords.add("int");
 		keywords.add("real");
 		keywords.add("bool");
@@ -119,7 +125,8 @@ public class CodeStyle {
 			} catch (BadLocationException e) {
 				e.printStackTrace();
 			}
-		} else {
+		}
+		else {
 			lexer.execute(text);
 			try {
 				displayTokens = lexer.getDisplayTokens();
@@ -154,6 +161,7 @@ public class CodeStyle {
 		}
 	}
 
+	//region addStyle函数
 	protected void addStyle(String key) {
 		addStyle(key, DEFAULT_FORGROUND, SIZE, FAMILY);
 	}
@@ -171,6 +179,7 @@ public class CodeStyle {
 		if (fam != null)
 			StyleConstants.setFontFamily(s, fam);
 	}
+	//endregion
 
 	public void drawWaveLine(Graphics g) {
 		int sectionX = charWidth / 4;

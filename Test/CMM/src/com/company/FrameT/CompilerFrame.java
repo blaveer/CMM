@@ -1,5 +1,4 @@
-																																																																																																																																																																																										package com.vincent.main;
-
+package com.company.FrameT;
 /**
  * 编译器主窗体
  */
@@ -64,7 +63,10 @@ public class CompilerFrame extends JFrame {
 	private static JMenu windowMenu;
 	//帮助菜单
 	private static JMenu helpMenu;
-	
+
+	public static JPanel promptPanel=new JPanel(null);
+
+
 	//控制台和错误信息
 	public static JTabbedPane proAndConPanel;
 	
@@ -91,7 +93,7 @@ public class CompilerFrame extends JFrame {
 	private JMenuItem item3;
 	private JMenuItem item4;
 	
-	//菜单子项 
+	//region  菜单子项 声明
 	private JMenuItem newItem;
 	private JMenuItem openItem;
 	private JMenuItem saveItem;
@@ -110,8 +112,9 @@ public class CompilerFrame extends JFrame {
 	private JMenuItem startPageItem;
 	private JMenuItem newWindowItem;
 	private JMenuItem helpItem;
-	
-	//工具条按钮
+	//endregion
+
+	//region 工具条按钮声明
 	private JButton newButton;
 	private JButton openButton;
 	private JButton saveButton;
@@ -125,6 +128,7 @@ public class CompilerFrame extends JFrame {
 	private JButton pasteButton;
 	private JButton searchButton;
 	private JButton helpButton;
+	//endregion
 	//endregion
 	private JPanel fileScanPanel;//中间的那个面板，用来显示代码区，支持多个文件同时开发
 
@@ -190,6 +194,8 @@ public class CompilerFrame extends JFrame {
 		setJMenuBar(MENUBAR);
 
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		promptPanel.setVisible(false);
+		add(promptPanel);
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 			SwingUtilities.updateComponentTreeUI(FILETREE);
@@ -471,7 +477,7 @@ public class CompilerFrame extends JFrame {
 		editLabelPanel.add(editLabel, BorderLayout.WEST);
 		editLabelPanel.setBackground(Color.LIGHT_GRAY);
 
-		// 控制条和错误列表区
+		//  region控制条和错误列表区
 		consoleArea.setEditable(false);
 		problemArea.setRows(6);
 		problemArea.setEditable(false);
@@ -491,8 +497,9 @@ public class CompilerFrame extends JFrame {
 		add(editPanel);
 		editPanel.setBounds(fileScanPanel.getWidth(), TOOLBAR.getHeight(), 815,
 				768 - TOOLBAR.getHeight() - 98);
+        //endregion
 
-		// 词法分析结果显示区
+		// region词法分析结果显示区
 		JScrollPane lexerPanel = new JScrollPane(null);
 		JScrollPane parserPanel = new JScrollPane(null);
 		JScrollPane interCodePanel = new JScrollPane(null);
@@ -516,9 +523,9 @@ public class CompilerFrame extends JFrame {
 				TOOLBAR.getHeight(), 1200 - fileScanPanel.getWidth()
 						- editPanel.getWidth() + 38, 768 - TOOLBAR.getHeight()
 						- 98);
-
+        //endregion
 		
-		// 为FILETREE添加双击监听器，使其在双击一个文件时打开该文件
+		// region为FILETREE添加双击监听器，使其在双击一个文件时打开该文件
 		FILETREE.setFont(treeFont);
 		FILETREE.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
@@ -554,8 +561,10 @@ public class CompilerFrame extends JFrame {
 				}
 			}
 		});
-
+        //endregion
 		doc = consoleArea.getStyledDocument();
+
+		//region consoleArea面板的事件函数
 		consoleArea.addKeyListener(new KeyAdapter() {
 
 			// 按下某键
@@ -607,8 +616,9 @@ public class CompilerFrame extends JFrame {
 				}
 			}
 		});
+		//endregion
 
-		// 为菜单项添加事件监听器
+		// region为菜单项添加事件监听器
 		newItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent paramActionEvent) {
 				create(null);
@@ -694,8 +704,9 @@ public class CompilerFrame extends JFrame {
 						JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
-		
-		// 为右键菜单添加事件监听器
+		//endregion
+
+		//region 为右键菜单添加事件监听器
 		item1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				copy();
@@ -716,8 +727,9 @@ public class CompilerFrame extends JFrame {
 				selectAll();
 			}
 		});
+		//endregion
 
-		// 为工具条按钮添加事件监听器
+		//region 为工具条按钮添加事件监听器
 		newButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent paramActionEvent) {
 				create(null);
@@ -787,7 +799,7 @@ public class CompilerFrame extends JFrame {
 						JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
-		
+		//endregion
 	}
 
 	// 内部类：监听鼠标右键
@@ -892,6 +904,7 @@ public class CompilerFrame extends JFrame {
 		return root;
 	}
     //region 暂时不用
+
 	//生成中间代码
 	public void generateCode() {
 		StyleEditor textArea = map.get(editTabbedPane.getSelectedComponent());
