@@ -65,6 +65,9 @@ public class CompilerFrame extends JFrame {
 	private static JMenu helpMenu;
 
 	public static JPanel promptPanel=new JPanel(null);
+	public static JList promptlist=new JList();
+	public static JScrollPane promptScroll=new JScrollPane();
+	public static int promptIndex=-1;
 
 
 	//控制台和错误信息
@@ -195,7 +198,14 @@ public class CompilerFrame extends JFrame {
 
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		promptPanel.setVisible(false);
+		promptPanel.setLayout(new FlowLayout(FlowLayout.CENTER,5,5));
+		//promptlist=new JList(new String[]{"l","i"});
+		//promptScroll.add(promptlist);
+		promptPanel.add(promptlist);
+
 		add(promptPanel);
+//		promptlist=new JList(new String[]{""});
+//		promptPanel.add(promptlist);
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 			SwingUtilities.updateComponentTreeUI(FILETREE);

@@ -3,16 +3,15 @@ package com.company.util;
 import com.company.FrameT.CompilerFrame;
 import com.sun.rowset.internal.Row;
 
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.LinkedList;
+import java.util.List;
 
-import javax.swing.JTextPane;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
@@ -27,6 +26,7 @@ import javax.swing.text.TabSet;
 import javax.swing.text.TabStop;
 
 import static com.company.FrameT.CompilerFrame.promptPanel;
+import static com.company.FrameT.CompilerFrame.promptlist;
 
 public class StyleEditor extends JTextPane implements DocumentListener {
 
@@ -123,6 +123,7 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 	public void setTabs(JTextPane textPane, int charactersPerTab) {
 		FontMetrics fm = textPane.getFontMetrics(textPane.getFont());
 		int charWidth = fm.charWidth('w');
+		//System.out.println("字符宽度是:"+charWidth);
 		int tabWidth = charWidth * charactersPerTab;
 		codeStyle.setCharWidth(charWidth);
 		TabStop[] tabs = new TabStop[1000];
@@ -185,13 +186,68 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 				LinkedList<String> prompt=getPrompt(input);
 				System.out.println(prompt);
 				if(prompt.size()>0){
-					promptPanel.setBounds(100,100,100,100);
+                    int   c=this.getCaretPosition();
+                    int   line =  this.getLineOfOffset(c)   +   1;   //行
+                    System.out.println("行高是："+line);
+                    int   col  =  c - this.getLineStartOffset(line-1)   +   1;//列
+                    //System.out.println("其坐标是：（"+x+","+y+")");
+                    String[] promptArr=prompt.toArray(new String[0]);
+                    DefaultListModel dlm=new DefaultListModel();
+                    dlm.clear();
+                    promptlist.setModel(dlm);
+                    for(int i=0;i<promptArr.length;i++){
+                        dlm.addElement(promptArr[i]);
+                    }
+                    promptlist.setModel(dlm);
+                    int CaretPosition=this.getCaretPosition();
+                    promptlist.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseClicked(MouseEvent evt) {
+                            JList list = (JList)evt.getSource();
+                            if (evt.getClickCount() == 2) {          // Double-click
+                                // Get item index
+                                int promptIndex = list.locationToIndex(evt.getPoint());
+
+                                replaceText(text, promptlist.getSelectedValuesList(),nDoc,CaretPosition);
+                                try{
+                                    //nDoc.insertString(CaretPosition-input.length(),promptlist.getSelectedValue().toString().trim(),style);
+                                    nDoc.insertString(CaretPosition,promptlist.getSelectedValue().toString().trim().replace(input,""),style);
+                                    promptPanel.setVisible(false);
+                                    //nDoc.remove(CaretPosition+promptlist.getSelectedValue().toString().trim().length()-input.length(),input.length());
+                                    //nDoc.remove(0,1);
+                                    System.out.println("去除函数也执行了");
+                                }catch (Exception ex){
+                                    System.out.println("v胡vu哦了");
+                                }
+
+                            }
+                        }
+                    });
+                    //promptlist.setBounds(new Rectangle(0,0));
+                    promptlist.setSelectedIndex(0);
+					promptPanel.setBounds(205+col*9,82+line*17,promptlist.getWidth()+10,promptlist.getHeight()+5);
+                    //promptPanel.setBounds(205+col*9,82+line*17,100,100);
 					promptPanel.setVisible(true);
 				}
 				else{
+				    try{
+                        //promptlist=null;
+                        //promptPanel.remove(promptlist);
+                    }catch (Exception ex){
+				        System.out.println("没有这个控件");
+                    }
 					promptPanel.setVisible(false);
 				}
 			}
+            else{
+                try{
+                    //promptlist=null;
+                    //promptPanel.remove(promptlist);
+                }catch (Exception ex){
+                    System.out.println("没有这个控件");
+                }
+                promptPanel.setVisible(false);
+            }
 
 			int off = getCaretPosition();
 			setDocument(nDoc);
@@ -203,7 +259,10 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 		}
 	}
 
-	private String getInput(String text,int CarePosition){
+    private void replaceText(String text, List selectedValuesList, StyledDocument nDoc, int caretPosition) {
+    }
+
+    private String getInput(String text,int CarePosition){
 		String prompt=null;
 		String[] split = text.split("\\n");
 		String RowText=null;
@@ -252,7 +311,11 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 		return false;
 	}
 	private LinkedList<String>getPrompt(String input){
+	    //System.out.println("待提示的字符串是"+input+"换行绘");
 		LinkedList<String> prompt=new LinkedList<String>();
+        if(input.equals("")){
+            return prompt;
+        }
 		for(int i=0;i<promptS.size();i++){
 			if(promptS.get(i).startsWith(input)){
 				prompt.add(promptS.get(i));
@@ -278,6 +341,7 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 		promptS.add("write");
 		promptS.add("true");
 		promptS.add("false");
+		//promptS.add("abcdefghijklmnopqrstuvwxyz");
 	}
 
 }
