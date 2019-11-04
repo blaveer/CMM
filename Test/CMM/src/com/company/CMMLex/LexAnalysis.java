@@ -55,7 +55,13 @@ public class LexAnalysis {
 
         ch= lineText.charAt(index);
         while(index<lineText.length()){
-            if(ch==' '||ch=='\t'||ch==';'||ch=='\r'||ch==','){
+            if(ch==';'||ch==','){
+                displayTokens.add(new Token(line,index+1,"分隔符",String.valueOf(ch)));
+                tokens.add(new Token(line,index+1,"分隔符",String.valueOf(ch)));
+                index++;
+                ch= lineText.charAt(index);
+            }
+            else if(ch==' '||ch=='\t'||ch=='\r'){
                 displayTokens.add(new Token(line,index+1,"分隔符",String.valueOf(ch)));
                 index++;
                 ch= lineText.charAt(index);
