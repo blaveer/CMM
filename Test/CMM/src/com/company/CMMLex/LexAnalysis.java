@@ -440,6 +440,7 @@ public class LexAnalysis {
             return true;
         return false;
     }
+
     //region getset方法
     public boolean isNotation() {
         return isNotation;

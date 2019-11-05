@@ -26,6 +26,10 @@ public class TokenTree {
             return false;
         }
     }
+    public int getChildSize() {
+        return children.size();
+    }
+
 
 //    public void addChild(TokenTree child){
 //        children.add(child);
@@ -47,7 +51,5 @@ public class TokenTree {
 //        }
 //    }
 //
-//    public int getChildSize() {
-//        return childSize;
-//    }
+
 }
