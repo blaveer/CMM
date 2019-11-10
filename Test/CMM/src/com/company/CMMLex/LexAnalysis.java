@@ -487,4 +487,9 @@ public class LexAnalysis {
         this.displayTokens = displayTokens;
     }
     //endregion
+    public void outToken(){
+        for(int i=0;i<tokens.size();i++){
+            System.out.println(tokens.get(i).getKind()+"    "+tokens.get(i).getContent());
+        }
+    }
 }

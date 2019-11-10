@@ -30,6 +30,7 @@ public class GraAnalysis {
 
     public GraAnalysis(ArrayList<Token> lexToken){
         this.tokens=lexToken;
+        tokens.add(new Token(0,0,"0","0"));
     }
 
     public void gra(){
@@ -56,7 +57,7 @@ public class GraAnalysis {
         if(currentToken.getKind()=="标识符"){
             state=assign_stm(false);
         }
-        else if(currentToken!=null&&(currentToken.getContent().equals("int")||currentToken.getContent().equals("string")||currentToken.getContent().equals("read")||currentToken.getContent().equals("bool"))){
+        else if(currentToken!=null&&(currentToken.getContent().equals("int")||currentToken.getContent().equals("string")||currentToken.getContent().equals("real")||currentToken.getContent().equals("bool"))){
             state=declare_stm();
         }
         else if(currentToken!=null&&currentToken.getContent().equals("for")){
@@ -73,6 +74,10 @@ public class GraAnalysis {
         }
         else if(currentToken!=null&&currentToken.getContent().equals("read")){
             state=read_stm();
+        }
+        else if(currentToken.getLine()==0){
+            counter++;
+            state=new TokenTree("finish","finish");
         }
         else{
             addError(currentToken.getLine(),currentToken.getCulomn(),"以错误的Token开始");
@@ -230,7 +235,7 @@ public class GraAnalysis {
         }else{
             addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右小括号）");
         }
-        if(currentToken.getKind().equals("lBB")){
+        if(currentToken.getKind().equals("LBB")){
             haaBB=true;
             counter++;
             currentToken=tokens.get(counter);
@@ -270,6 +275,12 @@ public class GraAnalysis {
         TokenTree forComp=new TokenTree("关键字","check");
         forComp.children.add(comp_stm());
         forTemp.children.add(forComp);
+        if(currentToken.getContent().equals(";")){
+            counter++;
+            currentToken=tokens.get(counter);
+        }else{
+            addError(currentToken.getLine(),currentToken.getCulomn(),"缺少分号；");
+        }
         TokenTree forCheck=new TokenTree("关键字","init");
         forCheck.children.add(assign_stm(true));
         forTemp.children.add(forCheck);
@@ -314,7 +325,7 @@ public class GraAnalysis {
      * */
     private TokenTree declare_stm(){
         TokenTree dec=new TokenTree("关键字","declare");
-        dec.children.add(new TokenTree("关键字",currentToken.getKind()));
+        dec.children.add(new TokenTree("关键字",currentToken.getContent()));
         counter++;
         currentToken=tokens.get(counter);
         while(true){
@@ -349,15 +360,19 @@ public class GraAnalysis {
                             addError(currentToken.getLine(),currentToken.getCulomn(),"数组赋值缺少{");
                         }
                         TokenTree array_token=new TokenTree("关键字","AllArrayInit");
-                        counter++;
-                        currentToken=tokens.get(counter);
+                        array_token.children.add(express_stm());
+                        //下面这段代码做过大的改动
+//                        counter++;
+//                        currentToken=tokens.get(counter);
                         while(!currentToken.getKind().equals("RBB")){
-                            array_token.children.add(array_token);
                             counter++;
                             currentToken=tokens.get(counter);
+                            array_token.children.add(express_stm());//这个地方在11月10日做过改动，
+//                            counter++;
+//                            currentToken=tokens.get(counter);
                             if(currentToken.getContent().equals(",")){
-                                counter++;
-                                currentToken=tokens.get(counter);
+//                                counter++;
+//                                currentToken=tokens.get(counter);
                                 continue;
                             }
                             else if(currentToken.getKind().equals("RBB")){
@@ -411,8 +426,8 @@ public class GraAnalysis {
                     currentToken=tokens.get(counter);
                     ass.children.add(express_stm());
                     dec.children.add(ass);
-                    counter++;
-                    currentToken=tokens.get(counter);
+//                    counter++;
+//                    currentToken=tokens.get(counter);
                     if(currentToken.getContent().equals(";")){
                         counter++;
                         currentToken=tokens.get(counter);
@@ -482,8 +497,8 @@ public class GraAnalysis {
              * 但是像字符串这样的等等问题，放在语义分析中去解决
              * **/
             //tag.children.add(new TokenTree("LMB","["));
-            counter++;
-            currentToken=tokens.get(counter);
+//            counter++;
+//            currentToken=tokens.get(counter);
             tag.children.add(express_stm());//理应每个函数结束的时候会读取下一个token
             //TODO 这个不读很可能是个巨大的BUG
 //            counter++; //【 】中间的完成了，这个应该是】了
@@ -496,8 +511,8 @@ public class GraAnalysis {
             else{
                 addError(currentToken.getLine(),currentToken.getCulomn(),"缺少】");
             }
-            counter++;
-            currentToken=tokens.get(counter);
+//            counter++;
+//            currentToken=tokens.get(counter);
             if(currentToken.getContent().equals("=")){
                 counter++;
                 currentToken=tokens.get(counter);
@@ -586,25 +601,25 @@ public class GraAnalysis {
         // 保存要返回的结点
         TokenTree tempNode = null;
         if (currentToken != null && currentToken.getKind().equals("整数")) {
-            tempNode = new TokenTree("整数", currentToken.getContent());
+            tempNode = new TokenTree("int", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
         }
         else if (currentToken != null && currentToken.getKind().equals("实数")) {
-            tempNode = new TokenTree("实数", currentToken.getContent());
+            tempNode = new TokenTree("real", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
         }
         //TODO 关于下面的两个布尔的判断，暂时没有很好的处理方式
         else if (currentToken != null
                 && currentToken.getContent().equals("true")) {
-            tempNode = new TokenTree("布尔值", currentToken.getContent());
+            tempNode = new TokenTree("bool", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
         }
         else if (currentToken != null
                 && currentToken.getContent().equals("false")) {
-            tempNode = new TokenTree("布尔值", currentToken.getContent());
+            tempNode = new TokenTree("bool", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
         }
@@ -615,6 +630,7 @@ public class GraAnalysis {
             if (currentToken != null
                     && currentToken.getContent().equals("[")) {
                 //tempNode.add(array());
+                //TODO 如果监测到数组，还需要再进入数组里面
             }
             //endregion
         }
@@ -703,7 +719,7 @@ public class GraAnalysis {
     }
 
     private TokenTree comp_stm(){
-        //TODO 待做
+        //TODO 待做,刚测试时候，如果单独的放一个bool变量，显示是会报错的，待解决
         TokenTree comp_token=null;
         TokenTree left_token=express_stm();
         if(currentToken.getContent().equals("<")
@@ -714,7 +730,12 @@ public class GraAnalysis {
             counter++;
             currentToken=tokens.get(counter);
         }
-
+        else if(currentToken.getContent().equals(";")
+                ||currentToken.getKind().equals("RLB")){
+            comp_token=new TokenTree("布尔运算","暂时不知道用什么好");
+            comp_token.children.add(left_token);
+            return comp_token;
+        }
         else{
             comp_token=new TokenTree("错误","错误的比较符号");
         }
@@ -738,6 +759,16 @@ public class GraAnalysis {
         errorInfo=errorInfo+"第"+line+"行第"+culomn+"列"+narrate+"\n";
     }
 
+
+    public void outToken(){
+        if(errorNum!=0){
+            System.out.println("语法分析有错误");
+        }else{
+            if(Program.hasChildren()){
+                Program.outTokenTree("");
+            }
+        }
+    }
     //region setget函数
     public int getErrorNum() {
         return errorNum;

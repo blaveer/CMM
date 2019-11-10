@@ -30,6 +30,25 @@ public class TokenTree {
         return children.size();
     }
 
+    public void outTokenTree(String kong){
+        System.out.println(kong+"|"+kind+"   "+content);
+       //System.out.println(children.size());
+        for(int i=0;i<children.size();i++){
+            children.get(i).outTokenTree(kong+"|     ");
+            //System.out.println(kong+kind+(i+1));
+        }
+    }
+
+
+    public String getKind(){
+        return kind;
+    }
+    public String getContent(){
+        return content;
+    }
+    public TokenTree get(int index){
+        return children.get(index);
+    }
 
 //    public void addChild(TokenTree child){
 //        children.add(child);

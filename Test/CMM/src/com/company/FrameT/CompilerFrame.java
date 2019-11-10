@@ -915,6 +915,7 @@ public class CompilerFrame extends JFrame {
 	}
     //region 暂时不用
 
+
 	//生成中间代码
 	public void generateCode() {
 		StyleEditor textArea = map.get(editTabbedPane.getSelectedComponent());
