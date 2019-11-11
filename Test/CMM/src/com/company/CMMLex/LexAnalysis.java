@@ -366,6 +366,40 @@ public class LexAnalysis {
             else if(ch=='\n'){
                 break;
             }
+            else if(ch=='&'){
+                index++;
+                ch=lineText.charAt(index);
+                if(ch=='&'){
+                    tokens.add(new Token(line,index+1,"运算符","&&"));
+                    displayTokens.add(new Token(line,index+1,"运算符","&&"));
+                    index++;
+                    ch= lineText.charAt(index);
+                }
+                else{
+                    displayTokens.add(new Token(line ,index+1,"错误",String.valueOf(ch)));
+                    errorNum++;
+                    String error="在第"+String.valueOf(line)+"第"+(index)+"处有两个不合法的字符\n";
+                    index++;
+                    ch=lineText.charAt(index);
+                }
+            }
+            else if(ch=='|'){
+                index++;
+                ch=lineText.charAt(index);
+                if(ch=='|'){
+                    tokens.add(new Token(line,index+1,"运算符","||"));
+                    displayTokens.add(new Token(line,index+1,"运算符","||"));
+                    index++;
+                    ch= lineText.charAt(index);
+                }
+                else{
+                    displayTokens.add(new Token(line ,index+1,"错误",String.valueOf(ch)));
+                    errorNum++;
+                    String error="在第"+String.valueOf(line)+"第"+(index)+"处有两个不合法的字符\n";
+                    index++;
+                    ch=lineText.charAt(index);
+                }
+            }
             else{
                 displayTokens.add(new Token(line ,index+1,"错误",String.valueOf(ch)));
                 errorNum++;
