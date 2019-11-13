@@ -22,6 +22,10 @@ public class ReservedWord {
     public static final String TRUE = "true";
     public static final String FALSE = "false";
     public static final String FOR = "for";   // TODO 待删除
+    public static final String BREAK="break";
+    public static final String CONTINUE="continue";
+    public static final String CHAR="char";
+    public static final String MAIN="main";
     public static final String DQ = "\"";    // TODO 待删除
     public static final String RBRACE = "}";
     public static final String LBRACE = "{";

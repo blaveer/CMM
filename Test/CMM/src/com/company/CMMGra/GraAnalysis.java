@@ -160,7 +160,7 @@ public class GraAnalysis {
             addError(currentToken.getLine(),currentToken.getCulomn(),"缺少左小括号（");
         }
         TokenTree if_check=new TokenTree("关键字","check");
-        if_check.children.add(comp_stm());
+        if_check.children.add(express_stm());/**这里刚改过1113*/
         if_token.children.add(if_check);
         if(currentToken.getKind().equals("RLB")){
             counter++;
@@ -227,7 +227,7 @@ public class GraAnalysis {
             addError(currentToken.getLine(),currentToken.getCulomn(),"缺少左小括号（");
         }
         TokenTree while_check=new TokenTree("关键字","check");
-        while_check.children.add(comp_stm());
+        while_check.children.add(express_stm());/**这里刚改过1113*/
         while_token.children.add(while_check);
         if(currentToken.getKind().equals("RLB")){
             counter++;
@@ -273,7 +273,7 @@ public class GraAnalysis {
         forInit.children.add(assign_stm(false));
         forTemp.children.add(forInit);
         TokenTree forComp=new TokenTree("关键字","check");
-        forComp.children.add(comp_stm());
+        forComp.children.add(express_stm());/**这里刚改过1113*/
         forTemp.children.add(forComp);
         if(currentToken.getContent().equals(";")){
             counter++;
@@ -471,11 +471,11 @@ public class GraAnalysis {
      * isFor变量是用来标识是否是For循环进来的赋值语句的后半段的，也就是不不要验证分号那个
      * */
     private TokenTree assign_stm(boolean IsFor) {
+        //TODO 数组的整体赋值还是有问题 ,已解决
         TokenTree ass_token=new TokenTree("关键字","assign");
         TokenTree ass_stm=new TokenTree("运算符","=");
         ass_token.children.add(ass_stm);/**每一个语句都有其解释，再有其子节点*/
         TokenTree tag=new TokenTree("标识符",currentToken.getContent());
-
         ass_stm.children.add(tag);//将标识符作为等号的第一个子节点
         counter++;//此时应该指向=号了,除非是数组赋值
         currentToken=tokens.get(counter);
@@ -532,9 +532,9 @@ public class GraAnalysis {
             counter++;
             currentToken=tokens.get(counter);
             while(!currentToken.getKind().equals("RBB")){
-                array_token.children.add(array_token);
-                counter++;
-                currentToken=tokens.get(counter);
+                array_token.children.add(express_stm());
+//                counter++;
+//                currentToken=tokens.get(counter);
                 if(currentToken.getContent().equals(",")){
                     counter++;
                     currentToken=tokens.get(counter);
@@ -568,11 +568,40 @@ public class GraAnalysis {
         return ass_token;
     }
 
+    //这个暂时这样命名，等完全整合之后再合并
+    private TokenTree express_stm(){
+        TokenTree express=compare();
+        while(currentToken!=null&&
+                (currentToken.getContent().equals("&&")
+                        ||currentToken.getContent().equals("||"))){
+            TokenTree addTree=log_op();
+            //下面这行代码相当于在这个运算符后面加了一个括号
+            addTree.children.add(express);
+            express=addTree;
+            express.children.add(compare());
+        }
+        return express;
+    }
+
+    private TokenTree compare(){
+        TokenTree temp=addition();/**这里应该调用现在下面的express_stm函数，等等改过名字之后 再说*/
+        while(currentToken!=null&&
+                (currentToken.getContent().equals(">")
+                ||currentToken.getContent().equals("<")
+                ||currentToken.getContent().equals("<>")
+                ||currentToken.getContent().equals("=="))){
+            TokenTree addTree=com_op();
+            addTree.children.add(temp);
+            temp=addTree;
+            temp.children.add(addition());
+        }
+        return temp;
+    }
     /**
      * 这里面表达式一个很大的不同支出在于表达式最后的根节点是一个运算符号，而像其他的语句的根节点都是能标识这句话的种类的，一般是以关键字表示其种类的
      *
      * **/
-    private TokenTree express_stm(){
+    private TokenTree addition(){
         TokenTree express=term();
         while (currentToken!=null&&(currentToken.getContent().equals("+")||currentToken.getContent().equals("-"))){
             TokenTree addTree=add_op();
@@ -624,14 +653,25 @@ public class GraAnalysis {
             currentToken=tokens.get(counter);
         }
         else if (currentToken != null && currentToken.getKind().equals("标识符")) {
-            tempNode = new TokenTree("标识符", currentToken.getContent());
+            TokenTree tempNode_ID=new TokenTree("标识符", currentToken.getContent());
+            //tempNode = new TokenTree("标识符", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
             if (currentToken != null
                     && currentToken.getContent().equals("[")) {
                 //tempNode.add(array());
                 //TODO 如果监测到数组，还需要再进入数组里面
+                counter++;
+                currentToken=tokens.get(counter);
+                tempNode_ID.children.add(express_stm());
+                if(currentToken!=null&&currentToken.getContent().equals("]")){
+                    counter++;
+                    currentToken=tokens.get(counter);
+                }else{
+                    addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右中括号");
+                }
             }
+            tempNode=tempNode_ID;
             //endregion
         }
         /**在这里也能一并表示出括号的优先级较高*/
@@ -718,6 +758,54 @@ public class GraAnalysis {
         return tempNode;
     }
 
+    private TokenTree com_op(){
+        TokenTree tempNode=null;
+        if(currentToken!=null&&currentToken.getContent().equals("<")){
+            tempNode=new TokenTree("运算符",currentToken.getContent());
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else if(currentToken!=null&&currentToken.getContent().equals(">")){
+            tempNode=new TokenTree("运算符",currentToken.getContent());
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else if(currentToken!=null&&currentToken.getContent().equals("<>")){
+            tempNode=new TokenTree("运算符",currentToken.getContent());
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else if(currentToken!=null&&currentToken.getContent().equals("==")){
+            tempNode=new TokenTree("运算符",currentToken.getContent());
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else {
+            tempNode=new TokenTree("错误","错误的运算符，这里应该比较运算符");
+            addError(currentToken.getLine(),currentToken.getCulomn(),"乘除符号错处");
+        }
+        return tempNode;
+    }
+
+    private TokenTree log_op(){
+        TokenTree tempNode=null;
+        if(currentToken!=null&&currentToken.getContent().equals("&&")){
+            tempNode=new TokenTree("运算符","&&");
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else if(currentToken!=null&&currentToken.getContent().equals("||")){
+            tempNode=new TokenTree("运算符","||");
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else{
+            tempNode=new TokenTree("错误","错误的运算符，应该是逻辑运算符");
+            addError(currentToken.getLine(),currentToken.getCulomn(),"逻辑符号错误");
+        }
+        return tempNode;
+    }
+
     private TokenTree comp_stm(){
         //TODO 待做,刚测试时候，如果单独的放一个bool变量，显示是会报错的，待解决
         TokenTree comp_token=null;
@@ -769,7 +857,7 @@ public class GraAnalysis {
             }
         }
     }
-    //region setget函数
+    //region set get函数
     public int getErrorNum() {
         return errorNum;
     }

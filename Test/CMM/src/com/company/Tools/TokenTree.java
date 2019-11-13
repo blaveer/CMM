@@ -5,10 +5,10 @@ import java.util.ArrayList;
 public class TokenTree {
     public ArrayList<TokenTree> children=new ArrayList<TokenTree>();//存储每个节点下的其子节点
 
-    private int childSize=0;
+    //private int childSize=0;
 
     //private int level;//区别其在哪。位置作用域啥的
-    public ArrayList<TAG> tagTable=new ArrayList<TAG>();//存储每个节点下的标识符
+    //public ArrayList<TAG> tagTable=new ArrayList<TAG>();//存储每个节点下的标识符
 
     private String kind;//这个节点的种类
     private String content;//节点的内容

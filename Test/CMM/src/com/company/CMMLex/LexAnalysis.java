@@ -327,8 +327,12 @@ public class LexAnalysis {
                     errorInfo=errorInfo+error;
                     break;
                 }else{
+                    tokens.add(new Token(line,start-1,"字符串","\""));
+                    displayTokens.add(new Token(line,start-1,"字符串","\""));
                     tokens.add(new Token(line,start,"字符串",tempToken));
                     displayTokens.add(new Token(line,start,"字符串",tempToken));
+                    tokens.add(new Token(line,end,"字符串","\""));
+                    displayTokens.add(new Token(line,end,"字符串","\""));
                 }
             }
             else if(ch=='='){
@@ -470,7 +474,9 @@ public class LexAnalysis {
                 || str.equals(ReservedWord.WRITE) || str.equals(ReservedWord.INT)
                 || str.equals(ReservedWord.REAL) || str.equals(ReservedWord.BOOL)
                 || str.equals(ReservedWord.STRING) || str.equals(ReservedWord.TRUE)
-                || str.equals(ReservedWord.FALSE) || str.equals(ReservedWord.FOR))
+                || str.equals(ReservedWord.FALSE) || str.equals(ReservedWord.FOR)
+                ||str.equals(ReservedWord.BREAK)||str.equals(ReservedWord.CONTINUE))
+               // ||str.equals(ReservedWord.CHAR))
             return true;
         return false;
     }
