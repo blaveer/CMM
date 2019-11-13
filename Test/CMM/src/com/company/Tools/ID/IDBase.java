@@ -38,4 +38,7 @@ public class IDBase {
     public boolean getIsInit(){
         return isInit;
     }
+    public void setIsInit(boolean isInit){
+        this.isInit=isInit;
+    }
 }

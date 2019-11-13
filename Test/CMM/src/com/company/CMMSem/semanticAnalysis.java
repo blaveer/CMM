@@ -18,6 +18,7 @@ public class semanticAnalysis {
     private ArrayList<Integer> counter_id=new ArrayList<>();/**这个变量是记录在每个模块中增加的标识符的的数量的,为了能够实现变量的作用域，自己挖的坑，自己填吧*/
     private int errorNum=0;
     private String errorInfo="";
+    private String log="";
     public semanticAnalysis(TokenTree root){
         this.root=root;
     }
@@ -30,22 +31,22 @@ public class semanticAnalysis {
                 declare_sem(temp);
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("read")){
-
+                read_sem(temp);
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("write")){
-
+                write_sem(temp);
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("assign")){
                 assign_sem(temp);
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("while")){
-
+                while_sem(temp);
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("for")){
-
+                for_sem(temp);
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("if")){
-
+                if_sem(temp);
             }
             else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
                 System.out.println("语义分析结束");
@@ -58,8 +59,161 @@ public class semanticAnalysis {
         }
     }
 
-    private void assign_sem(TokenTree temp){
+    private void read_sem(TokenTree temp){
 
+    }
+
+    private void write_sem(TokenTree temp){
+
+    }
+
+    private void if_sem(TokenTree temp){
+        TokenTree if_check=temp.get(0);
+        TokenTree if_main=temp.get(1);
+        TokenTree else_main=null;
+        if(temp.getChildSize()>2){
+            else_main=temp.get(2);
+        }
+        check_sem(if_check.get(0));
+        semantic(if_main);
+        if(else_main!=null){
+            semantic(else_main);
+        }
+    }
+
+    private void for_sem(TokenTree temp){
+        TokenTree init_front=temp.get(0);
+        TokenTree check=temp.get(1);
+        TokenTree init_back=temp.get(2);
+        TokenTree for_main=temp.get(3);
+        assign_sem(init_front.get(0));
+        check_sem(check.get(0));
+        assign_sem(init_back.get(0));
+        semantic(for_main);
+
+    }
+
+    private void while_sem(TokenTree temp){
+        //只要语法分析没问题，就两个子节点
+        TokenTree while_check=temp.get(0);
+        TokenTree while_main=temp.get(1);
+        check_sem(while_check.get(0));
+        semantic(while_main);
+    }
+
+    private void assign_sem(TokenTree temp){
+        TokenTree assign=temp.get(0);//这个是等号的那个节点
+        TokenTree id_assign=assign.get(0);//这个是标识符
+        String kind="";
+
+        if(isExist(id_assign.getContent())){
+            kind=findIDKindByName(id_assign.getContent());
+        }
+        else{
+            addError("使用了未声明的变量"+id_assign.getContent());
+            return;
+        }
+        /**对数组的某一项赋值*/
+        if(id_assign.hasChildren()){
+            TokenTree id_assign_array_length=id_assign.get(0);
+            if(id_assign_array_length.getKind().equals("运算符")){
+                if(express_type_check(id_assign_array_length,"int")){
+                    findIDByName(id_assign.getContent()).setIsInit(true);
+                }
+            }
+            else if(id_assign_array_length.getContent().equals("int")){
+                findIDByName(id_assign.getContent()).setIsInit(true);
+            }
+            else if(id_assign_array_length.getKind().equals("标识符")){
+                if(isExist(id_assign_array_length.getContent())){
+                    IDBase temp_id=findIDByName(id_assign_array_length.getContent());
+                    String kind_temp_id=temp_id.getKind();
+                    boolean is_init=temp_id.getIsInit();
+                    if(!is_init){
+                        addError("使用了初始化的标识符"+id_assign_array_length.getContent());
+                    }else if(!typeCompatibility("int",kind_temp_id)){
+                        addError("使用了不是int的标识符"+id_assign_array_length.getContent()+"作为数组下标");
+                    }
+                    else{
+                        findIDByName(id_assign.getContent()).setIsInit(true);
+                        //将标识符设置为初始化了，无论之前是否初始化过
+                    }
+                }
+                else{
+                    addError("使用了未声明的标识符"+id_assign_array_length.getContent());
+                }
+            }
+            TokenTree id_assign_array_one_init=assign.get(1);//这个是等号后面的
+            if(id_assign_array_one_init.getKind().equals("标识符")){
+                if(useID(id_assign_array_one_init.getContent(),kind)){
+                    findIDByName(id_assign.getContent()).setIsInit(true);
+                }
+                else{
+                    addError("使用了不合理的标识符来初始化"+kind+"类型的数组");
+                }
+            }
+            else if(id_assign_array_one_init.getKind().equals("运算符")){
+                if(express_type_check(id_assign_array_one_init,kind)){
+                    findIDByName(id_assign.getContent()).setIsInit(true);
+                }
+                else{
+                    addError("使用了不合理的算术表达式来初始化"+kind+"类型的数组");
+                }
+            }
+            else if(typeCompatibility(kind,id_assign_array_one_init.getKind())){
+                findIDByName(id_assign.getContent()).setIsInit(true);
+            }
+            else{
+                addError("使用了不合理表达式来初始化"+kind+"类型的数组");
+            }
+        }
+        else{
+            TokenTree id_init=assign.get(1);
+            IDBase id_temp=findIDByName(id_assign.getContent());
+            boolean declare_id_array=id_temp.getIsArr();
+            if(declare_id_array){
+                if(id_init.getContent().equals("AllArrayInit")){
+                    if(express_type_check_array_init(id_init,kind)){
+                        id_temp.setIsInit(true);
+                    }
+                    else{
+                        addError("在对数组"+id_assign.getContent()+"进行赋值时采用了不合理的数据类型");
+                    }
+                }
+                else{
+                    addError("对于被声明为数组的标识符"+id_assign.getContent()+"采用了不合理的整体赋值方式");
+                }
+            }
+            else{
+                if(id_init.getContent().equals("AllArrayInit")){
+                    addError("对于变量"+id_assign.getContent()+"采用了不合理的赋值方式");
+                }
+                else{
+                    if(id_init.getKind().equals("标识符")){
+                        if(useID(id_init.getContent(),kind)){
+                            findIDByName(id_assign.getContent()).setIsInit(true);
+                        }
+                        else{
+                            addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+                        }
+                    }
+                    else if(id_init.getKind().equals("运算符")){
+                        if(express_type_check(id_init,kind)){
+                            findIDByName(id_assign.getContent()).setIsInit(true);
+                        }
+                        else{
+                            addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+                        }
+                    }
+                    else if(typeCompatibility(kind,id_init.getKind())){
+                        findIDByName(id_assign.getContent()).setIsInit(true);
+                    }
+                    else{
+                        addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+                    }
+                }
+            }
+        }
     }
 
     private void declare_sem(TokenTree temp){
@@ -149,6 +303,34 @@ public class semanticAnalysis {
         }
     }
 
+    private void check_sem(TokenTree temp){
+        if(temp.getKind().equals("标识符")){
+            if(useID(temp.getContent(),"bool")){
+                addLog("check语句语义分析成功");
+            }
+            else{
+                addError("check语句的返回结果不是bool类型");
+                addLog("check语句的返回结果不是bool类型");
+            }
+        }
+        else if(typeCompatibility("bool",temp.getKind())){
+            addLog("check语句语义分析成功");
+        }
+        else if(temp.getKind().equals("运算符")){
+            if(express_type_check(temp,"bool")){
+                addLog("check语句语义分析成功");
+            }
+            else{
+                addError("check语句的返回结果不是bool类型");
+                addLog("check语句的返回结果不是bool类型");
+            }
+        }
+        else{
+            addError("check语句的返回结果不是bool类型");
+            addLog("check语句的返回结果不是bool类型");
+        }
+    }
+
     private boolean express_type_check_array_init(TokenTree tempToot,String king){
         //初始化这也要考虑类型兼容了
         return true;//TODO 待做
@@ -165,6 +347,29 @@ public class semanticAnalysis {
     }
     private void removeID(int counter){
         //TODO 待做
+    }
+
+    /**其中name是使用的标识符的名字，kind是希望的类型*/
+    private boolean useID(String name,String kind){
+        if(isExist(name)){
+            IDBase temp_id=findIDByName(name);
+            String kind_temp_id=temp_id.getKind();
+            boolean is_init=temp_id.getIsInit();
+            if(!is_init){
+                addError("使用了初始化的标识符"+name);
+            }else if(!typeCompatibility(kind,kind_temp_id)){
+                addError("使用了类型不兼容的标识符"+name);
+            }
+            else{
+//                findIDByName(name).setIsInit(true);
+                return true;
+                //将标识符设置为初始化了，无论之前是否初始化过
+            }
+        }
+        else{
+            addError("使用了未声明的标识符"+name);
+        }
+        return false;
     }
 
     /**下面这个函数是用来判断类型兼容的，第一个是声明的类型，第二个是赋值的类型**/
@@ -245,6 +450,15 @@ public class semanticAnalysis {
         return null;
     }
 
+    private IDBase findIDByName(String name){
+        for(int counter=0;counter<ids.size();counter++){
+            if(ids.get(counter).getName().equals(name)){
+                return ids.get(counter);
+            }
+        }
+        return null;
+    }
+
     private boolean isExist(String id_name){
         for(int counter=0;counter<ids.size();counter++){
             if(ids.get(counter).getName().equals(id_name)){
@@ -257,5 +471,8 @@ public class semanticAnalysis {
     private void addError(String info){
         errorInfo=errorInfo+info+"\n";
         errorNum++;
+    }
+    private void addLog(String info){
+        this.log=log+info+"\n";
     }
 }

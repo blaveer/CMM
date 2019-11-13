@@ -173,16 +173,18 @@ public class GraAnalysis {
             counter++;
             currentToken=tokens.get(counter);
         }
+        TokenTree if_main=new TokenTree("关键字","if_main");
         if(hasBB){
             while(!currentToken.getKind().equals("RBB")){
-                if_token.children.add(statement());
+                if_main.children.add(statement());
             }
             counter++;
             currentToken=tokens.get(counter);
         }
         else{
-            if_token.children.add(statement());
+            if_main.children.add(statement());
         }
+        if_token.children.add(if_main);
         if(currentToken.getContent().equals("else")){
             hasElse=true;
             counter++;
@@ -240,19 +242,21 @@ public class GraAnalysis {
             counter++;
             currentToken=tokens.get(counter);
         }
+        TokenTree while_main=new TokenTree("关键字","while_main");
         if(haaBB){
             //这种写法是不健康的，要检测一下万一}整个未结束的情况
             while(!currentToken.getKind().equals("RBB")){
-                while_token.children.add(statement());
+                while_main.children.add(statement());
             }
             counter++;
             currentToken=tokens.get(counter);
         }
         else{
-            while_token.children.add(statement());
+            while_main.children.add(statement());
             counter++;
             currentToken=tokens.get(counter);
         }
+        while_token.children.add(while_main);
         return while_token;
     }
 
@@ -290,6 +294,7 @@ public class GraAnalysis {
         }else{
             addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右括号）");
         }
+        TokenTree for_main=new TokenTree("关键字","for_main");
         if(currentToken.getKind().equals("LBB")){
             hasBB=true;
             counter++;
@@ -298,17 +303,18 @@ public class GraAnalysis {
         //如果检测到大括号
         if(hasBB){
             while(!currentToken.getKind().equals("RBB")){
-                forTemp.children.add(statement());
+                for_main.children.add(statement());
             }
             counter++;
             currentToken=tokens.get(counter);
             //if(currentToken.getKind().equals(""))
         }//如果没有大括号
         else{
-            forTemp.children.add(statement());
+            for_main.children.add(statement());
             counter++;
             currentToken=tokens.get(counter);
         }
+        forTemp.children.add(for_main);
         return forTemp;
     }
 
