@@ -24,6 +24,8 @@ public class semanticAnalysis {
     }
     public void semantic(TokenTree tempRoot){
         TokenTree temp=null;
+        int counter_id_start=ids.size();
+        int counter_id_end=ids.size();
         for(int i=0;i<tempRoot.getChildSize();i++){
             //counter_id=0;
             temp=tempRoot.get(i);
@@ -55,7 +57,17 @@ public class semanticAnalysis {
             else{
                 System.out.println("出现了不该出现的关键字");
             }
-            removeID(counter_id.get(counter_id.size()-1));
+            //removeID(counter_id.get(counter_id.size()-1));
+        }
+        counter_id_end=ids.size();
+        int add_num=counter_id_end-counter_id_start;
+        if(add_num>0){
+            removeID(counter_id_start,add_num);
+        }else if(add_num==0){
+            addLog("本次没有添加新的变量");
+        }
+        else{
+            addLog("卧槽，跟胡扯一样");
         }
     }
 
@@ -230,7 +242,7 @@ public class semanticAnalysis {
                 }
                 if(one_id.hasChildren()){
                     TokenTree one_id_array_length=one_id.get(0);
-                    TokenTree one_id_array_init=one_id.get(1);
+                    TokenTree one_id_array_init=one_declare.get(1);
                     if(!express_type_check_array_init(one_id_array_init,kind)){
                         addError("关于"+one_id.getContent()+"数组的初始化中数据类型不匹配");
                         continue;
@@ -313,9 +325,6 @@ public class semanticAnalysis {
                 addLog("check语句的返回结果不是bool类型");
             }
         }
-        else if(typeCompatibility("bool",temp.getKind())){
-            addLog("check语句语义分析成功");
-        }
         else if(temp.getKind().equals("运算符")){
             if(express_type_check(temp,"bool")){
                 addLog("check语句语义分析成功");
@@ -325,28 +334,156 @@ public class semanticAnalysis {
                 addLog("check语句的返回结果不是bool类型");
             }
         }
+        else if(typeCompatibility("bool",temp.getKind())){
+            addLog("check语句语义分析成功");
+        }
         else{
             addError("check语句的返回结果不是bool类型");
             addLog("check语句的返回结果不是bool类型");
         }
     }
 
-    private boolean express_type_check_array_init(TokenTree tempToot,String king){
+    /**这个函数主要是用来检测数组的初始胡时候的类型问题
+     * 其中tempToot(写错了不改了)，是用来标识数组初始化的节点的其子节点就是全部要初始化的内容
+     * 其中king是目标类型，，这个也写错了，，，*/
+    private boolean express_type_check_array_init(TokenTree tempToot,String kind){
         //初始化这也要考虑类型兼容了
+        if(!tempToot.getKind().equals("AllArrayInit")){
+            return false;
+        }
+        for(int counter=0;counter<tempToot.getChildSize();counter++){
+            if(!express_type_check(tempToot.get(counter),kind)){
+                return false;
+            }
+        }
         return true;//TODO 待做
     }
+
     private boolean express_type_check(TokenTree express,String kind){
         switch (kind){
             case "int":
                 return type_int_check(express);
+            case "real":
+                return type_real_check(express);
+            case "bool":
+                return type_bool_check(express);
             default:return false;
         }
     }
-    private boolean type_int_check(TokenTree express_int){
+
+    private boolean type_bool_check(TokenTree express_bool){
+        if(isLogic(express_bool)){
+            if(express_bool.getKind().equals("&&")||express_bool.getKind().equals("||")){
+                return (express_type_check(express_bool.get(0),"bool")&&express_type_check(express_bool.get(1),"bool"));
+            }else{
+                return (express_type_check(express_bool.get(0),"real")&&express_type_check(express_bool.get(1),"real"));
+            }
+        }
+        else if(express_bool.getKind().equals("标识符")){
+            //if(typeCompatibility("bool",findIDKindByName(express_bool.getContent()))){
+            if(useID(express_bool.getContent(),"bool")){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+        else if(express_bool.getKind().equals("bool")&&(express_bool.getContent().equals("false")||express_bool.getContent().equals("true"))){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    private boolean type_real_check(TokenTree express_real){
+        if(express_real.getKind().equals("标识符")){
+            if(express_real.hasChildren()){
+                if(!useID(express_real.getContent(),"real")){
+                    //addError("标识符"+express_int.getContent()+"不存在");
+                    return false;
+                }
+                if(express_type_check(express_real.get(0),"int")){
+                    addLog("asasas");
+                }
+                else{
+                    return false;
+                }
+            }
+            else{
+                if(!useID(express_real.getContent(),"real")){
+                    return false;
+                }
+            }
+        }
+        else if(express_real.getKind().equals("real")||express_real.getKind().equals("int")){
+            return true;
+        }
+        else if(express_real.getKind().equals("运算符")&&isArithmetic(express_real)){
+            return (type_real_check(express_real.get(0))&&type_real_check(express_real.get(1)));
+        }
+        else {
+            return false;
+        }
         return true;
     }
-    private void removeID(int counter){
+
+    private boolean type_int_check(TokenTree express_int){
+        if(express_int.getKind().equals("标识符")){
+            if(express_int.hasChildren()){
+                if(!useID(express_int.getContent(),"int")){
+                    //addError("标识符"+express_int.getContent()+"不存在");
+                    return false;
+                }
+                if(express_type_check(express_int.get(0),"int")){
+                    addLog("asasas");
+                }
+                else{
+                    return false;
+                }
+            }
+            else{
+                if(!useID(express_int.getContent(),"int")){
+                    return false;
+                }
+            }
+        }
+        else if(express_int.getKind().equals("int")){
+            return true;
+        }
+        else if(express_int.getKind().equals("运算符")&&isArithmetic(express_int)){
+            return (type_int_check(express_int.get(0))&&type_int_check(express_int.get(1)));
+        }
+        else{
+            return false;
+        }
+        return true;
+    }
+
+    private void removeID(int start, int counter){
+        for(int i=0;i<counter;i++){
+            ids.remove(start);
+        }
         //TODO 待做
+    }
+
+    private boolean isLogic(TokenTree op){
+        if(op.getKind().equals("运算符")&&(!isArithmetic(op))){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    private boolean isArithmetic(TokenTree op){
+        if(op!=null&&(op.getContent().equals("+")
+                        ||op.getContent().equals("-")
+                        ||op.getContent().equals("*")
+                        ||op.getContent().equals("/"))){
+            return true;
+        }
+        return false;
     }
 
     /**其中name是使用的标识符的名字，kind是希望的类型*/
@@ -474,5 +611,10 @@ public class semanticAnalysis {
     }
     private void addLog(String info){
         this.log=log+info+"\n";
+    }
+
+    public void outError(){
+        System.out.println("错误的个数是"+errorNum);
+        System.out.println(errorInfo);
     }
 }

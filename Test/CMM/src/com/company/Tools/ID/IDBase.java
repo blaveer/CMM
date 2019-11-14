@@ -5,6 +5,7 @@ public class IDBase {
     private String name;
     private boolean isArr=false;
     private boolean isInit=false;
+    /**dist变量是用来区分是否是数组的，1是普通，2是数组*/
     public IDBase(String kind,String name,int dist){
         this.kind=kind;
         this.name=name;
@@ -26,6 +27,7 @@ public class IDBase {
             isArr=true;
         }
     }
+
     public String getKind(){
         return kind;
     }

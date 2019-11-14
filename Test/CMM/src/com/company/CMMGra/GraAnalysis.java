@@ -17,7 +17,7 @@ public class GraAnalysis {
     private ArrayList<Token> tokens = new ArrayList<Token>();
 
     //语法分析的根节点
-    public TokenTree Program=new TokenTree("关键字","root");
+    private TokenTree Program=new TokenTree("关键字","root");
 
 
     //用来遍历词法分析得到的Token。
@@ -285,9 +285,9 @@ public class GraAnalysis {
         }else{
             addError(currentToken.getLine(),currentToken.getCulomn(),"缺少分号；");
         }
-        TokenTree forCheck=new TokenTree("关键字","init");
-        forCheck.children.add(assign_stm(true));
-        forTemp.children.add(forCheck);
+        TokenTree for_init_back=new TokenTree("关键字","init");
+        for_init_back.children.add(assign_stm(true));
+        forTemp.children.add(for_init_back);
         if(currentToken.getKind().equals("RLB")){
             counter++;
             currentToken=tokens.get(counter);
@@ -562,7 +562,7 @@ public class GraAnalysis {
         }
 
         if(IsFor){
-            return ass_stm;
+            return ass_token;
         }
         if(currentToken.getContent().equals(";")){
             //分割符就不加入
@@ -886,6 +886,10 @@ public class GraAnalysis {
 
     public void setTokens(ArrayList<Token> tokens) {
         this.tokens = tokens;
+    }
+
+    public TokenTree getRoot(){
+        return Program;
     }
     //endregion
 }
