@@ -266,7 +266,15 @@ public class semanticAnalysis {
                     TokenTree one_init=one_declare.get(1);
                     if(one_init.getKind().equals("运算符")){
                         if(express_type_check(one_init,kind)){
-                            ids.add(new IDBase(kind,one_id.getContent(),1));
+                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
+                        }
+                        else{
+                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
+                        }
+                    }
+                    if(one_init.getKind().equals("标识符")){
+                        if(useID(one_init.getContent(),kind)){
+                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
                         }
                         else{
                             addError("关于"+one_id.getContent()+"的初始化类型不兼容");
@@ -277,7 +285,7 @@ public class semanticAnalysis {
                             addError("关于"+one_id.getContent()+"的初始化类型不兼容");
                         }
                         else{
-                            ids.add(new IDBase(kind,one_id.getContent(),1));
+                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
                         }
                     }
                 }
@@ -348,7 +356,7 @@ public class semanticAnalysis {
      * 其中king是目标类型，，这个也写错了，，，*/
     private boolean express_type_check_array_init(TokenTree tempToot,String kind){
         //初始化这也要考虑类型兼容了
-        if(!tempToot.getKind().equals("AllArrayInit")){
+        if(!tempToot.getContent().equals("AllArrayInit")){
             return false;
         }
         for(int counter=0;counter<tempToot.getChildSize();counter++){
@@ -373,7 +381,7 @@ public class semanticAnalysis {
 
     private boolean type_bool_check(TokenTree express_bool){
         if(isLogic(express_bool)){
-            if(express_bool.getKind().equals("&&")||express_bool.getKind().equals("||")){
+            if(express_bool.getContent().equals("&&")||express_bool.getContent().equals("||")){
                 return (express_type_check(express_bool.get(0),"bool")&&express_type_check(express_bool.get(1),"bool"));
             }else{
                 return (express_type_check(express_bool.get(0),"real")&&express_type_check(express_bool.get(1),"real"));
@@ -493,7 +501,7 @@ public class semanticAnalysis {
             String kind_temp_id=temp_id.getKind();
             boolean is_init=temp_id.getIsInit();
             if(!is_init){
-                addError("使用了初始化的标识符"+name);
+                addError("使用了未初始化的标识符"+name);
             }else if(!typeCompatibility(kind,kind_temp_id)){
                 addError("使用了类型不兼容的标识符"+name);
             }

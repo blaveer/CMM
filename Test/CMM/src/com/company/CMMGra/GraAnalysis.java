@@ -689,7 +689,7 @@ public class GraAnalysis {
             tempNode = express_stm();
             // 匹配右括号)
             if (currentToken != null
-                    && currentToken.getContent().equals(")")) {
+                    && currentToken.getKind().equals("RLB")) {
                 counter++;
                 currentToken=tokens.get(counter);
             }
