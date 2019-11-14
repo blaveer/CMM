@@ -192,6 +192,7 @@ public class semanticAnalysis {
                         addError("在对数组"+id_assign.getContent()+"进行赋值时采用了不合理的数据类型");
                     }
                 }
+                //TODO 这里缺乏一种数组给数组整体赋值的情况，安全起见，就不提供了
                 else{
                     addError("对于被声明为数组的标识符"+id_assign.getContent()+"采用了不合理的整体赋值方式");
                 }
@@ -203,6 +204,7 @@ public class semanticAnalysis {
                 else{
                     if(id_init.getKind().equals("标识符")){
                         if(useID(id_init.getContent(),kind)){
+                            //TODO 这里应当添加用数组的某一项为其赋值的情况，包括声明的那个地方也应当改一下，15日凌晨写，望白天能改
                             findIDByName(id_assign.getContent()).setIsInit(true);
                         }
                         else{
@@ -624,5 +626,12 @@ public class semanticAnalysis {
     public void outError(){
         System.out.println("错误的个数是"+errorNum);
         System.out.println(errorInfo);
+    }
+
+    public int getErrorNum(){
+        return errorNum;
+    }
+    public String getErrorInfo(){
+        return errorInfo;
     }
 }

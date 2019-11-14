@@ -179,75 +179,75 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 			//TODO 现在的关键就是解决用什么来显示提示符和如何获取用来被提示的字符以及如何删除和替换其中的字串。
 			oDoc.removeDocumentListener(this);
 			nDoc.addDocumentListener(this);
-			//System.out.println(this.getCaretPosition());
-			String input=getInput(text,this.getCaretPosition());
-			System.out.println(input);
-			if(input!=null){
-				LinkedList<String> prompt=getPrompt(input);
-				System.out.println(prompt);
-				if(prompt.size()>0){
-                    int   c=this.getCaretPosition();
-                    int   line =  this.getLineOfOffset(c)   +   1;   //行
-                    System.out.println("行高是："+line);
-                    int   col  =  c - this.getLineStartOffset(line-1)   +   1;//列
-                    //System.out.println("其坐标是：（"+x+","+y+")");
-                    String[] promptArr=prompt.toArray(new String[0]);
-                    DefaultListModel dlm=new DefaultListModel();
-                    dlm.clear();
-                    promptlist.setModel(dlm);
-                    for(int i=0;i<promptArr.length;i++){
-                        dlm.addElement(promptArr[i]);
-                    }
-                    promptlist.setModel(dlm);
-                    int CaretPosition=this.getCaretPosition();
-                    promptlist.addMouseListener(new MouseAdapter() {
-                        @Override
-                        public void mouseClicked(MouseEvent evt) {
-                            JList list = (JList)evt.getSource();
-                            if (evt.getClickCount() == 2) {          // Double-click
-                                // Get item index
-                                int promptIndex = list.locationToIndex(evt.getPoint());
-
-                                replaceText(text, promptlist.getSelectedValuesList(),nDoc,CaretPosition);
-                                try{
-                                    //nDoc.insertString(CaretPosition-input.length(),promptlist.getSelectedValue().toString().trim(),style);
-                                    nDoc.insertString(CaretPosition,promptlist.getSelectedValue().toString().trim().replace(input,""),style);
-                                    promptPanel.setVisible(false);
-                                    //nDoc.remove(CaretPosition+promptlist.getSelectedValue().toString().trim().length()-input.length(),input.length());
-                                    //nDoc.remove(0,1);
-                                    System.out.println("去除函数也执行了");
-                                }catch (Exception ex){
-                                    System.out.println("v胡vu哦了");
-                                }
-
-                            }
-                        }
-                    });
-                    //promptlist.setBounds(new Rectangle(0,0));
-                    promptlist.setSelectedIndex(0);
-					promptPanel.setBounds(205+col*9,82+line*17,promptlist.getWidth()+10,promptlist.getHeight()+5);
-                    //promptPanel.setBounds(205+col*9,82+line*17,100,100);
-					promptPanel.setVisible(true);
-				}
-				else{
-				    try{
-                        //promptlist=null;
-                        //promptPanel.remove(promptlist);
-                    }catch (Exception ex){
-				        System.out.println("没有这个控件");
-                    }
-					promptPanel.setVisible(false);
-				}
-			}
-            else{
-                try{
-                    //promptlist=null;
-                    //promptPanel.remove(promptlist);
-                }catch (Exception ex){
-                    System.out.println("没有这个控件");
-                }
-                promptPanel.setVisible(false);
-            }
+//			//System.out.println(this.getCaretPosition());
+//			String input=getInput(text,this.getCaretPosition());
+//			System.out.println(input);
+//			if(input!=null){
+//				LinkedList<String> prompt=getPrompt(input);
+//				System.out.println(prompt);
+//				if(prompt.size()>0){
+//                    int   c=this.getCaretPosition();
+//                    int   line =  this.getLineOfOffset(c)   +   1;   //行
+//                    System.out.println("行高是："+line);
+//                    int   col  =  c - this.getLineStartOffset(line-1)   +   1;//列
+//                    //System.out.println("其坐标是：（"+x+","+y+")");
+//                    String[] promptArr=prompt.toArray(new String[0]);
+//                    DefaultListModel dlm=new DefaultListModel();
+//                    dlm.clear();
+//                    promptlist.setModel(dlm);
+//                    for(int i=0;i<promptArr.length;i++){
+//                        dlm.addElement(promptArr[i]);
+//                    }
+//                    promptlist.setModel(dlm);
+//                    int CaretPosition=this.getCaretPosition();
+//                    promptlist.addMouseListener(new MouseAdapter() {
+//                        @Override
+//                        public void mouseClicked(MouseEvent evt) {
+//                            JList list = (JList)evt.getSource();
+//                            if (evt.getClickCount() == 2) {          // Double-click
+//                                // Get item index
+//                                int promptIndex = list.locationToIndex(evt.getPoint());
+//
+//                                replaceText(text, promptlist.getSelectedValuesList(),nDoc,CaretPosition);
+//                                try{
+//                                    //nDoc.insertString(CaretPosition-input.length(),promptlist.getSelectedValue().toString().trim(),style);
+//                                    nDoc.insertString(CaretPosition,promptlist.getSelectedValue().toString().trim().replace(input,""),style);
+//                                    promptPanel.setVisible(false);
+//                                    //nDoc.remove(CaretPosition+promptlist.getSelectedValue().toString().trim().length()-input.length(),input.length());
+//                                    //nDoc.remove(0,1);
+//                                    System.out.println("去除函数也执行了");
+//                                }catch (Exception ex){
+//                                    System.out.println("v胡vu哦了");
+//                                }
+//
+//                            }
+//                        }
+//                    });
+//                    //promptlist.setBounds(new Rectangle(0,0));
+//                    promptlist.setSelectedIndex(0);
+//					promptPanel.setBounds(205+col*9,82+line*17,promptlist.getWidth()+10,promptlist.getHeight()+5);
+//                    //promptPanel.setBounds(205+col*9,82+line*17,100,100);
+//					promptPanel.setVisible(true);
+//				}
+//				else{
+//				    try{
+//                        //promptlist=null;
+//                        //promptPanel.remove(promptlist);
+//                    }catch (Exception ex){
+//				        System.out.println("没有这个控件");
+//                    }
+//					promptPanel.setVisible(false);
+//				}
+//			}
+//            else{
+//                try{
+//                    //promptlist=null;
+//                    //promptPanel.remove(promptlist);
+//                }catch (Exception ex){
+//                    System.out.println("没有这个控件");
+//                }
+//                promptPanel.setVisible(false);
+//            }
 
 			int off = getCaretPosition();
 			setDocument(nDoc);

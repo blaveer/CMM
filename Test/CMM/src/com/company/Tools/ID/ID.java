@@ -65,6 +65,21 @@ public class ID {
         }
     }
 
+    public String get(int index){
+        if(index<0||index>=arr.length){
+            return null;
+        }
+        return arr[index];
+    }
+    public boolean set(String new_value,int index){
+        if(index<0||index>=arr.length){
+            return false;
+        }
+        else{
+            arr[index]=new_value;
+            return true;
+        }
+    }
 
     //region set和get函数，只添加了一部分，等有需要了再添加
     public String getKind(){
