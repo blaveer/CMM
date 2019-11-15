@@ -276,7 +276,7 @@ public class semanticAnalysis {
                             addError("关于"+one_id.getContent()+"的初始化类型不兼容");
                         }
                     }
-                    if(one_init.getKind().equals("标识符")){
+                    else if(one_init.getKind().equals("标识符")){
                         //if(useID(one_init.getContent(),kind)){ //TODO
                         if(useID(one_init,kind)){
                             ids.add(new IDBase(kind,one_id.getContent(),1,true));

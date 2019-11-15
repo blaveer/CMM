@@ -29,32 +29,47 @@ public class RunAnalysis {
         for(int counter=0;counter<tempRoot.getChildSize();counter++){
             temp=tempRoot.get(counter);
             if(temp.getKind().equals("关键字")&&temp.getContent().equals("declare")){
-                declare_run(temp);
+                if(!declare_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("read")){
-                read_run(temp);
+                if(!read_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("write")){
-                write_run(temp);
+                if(!write_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("assign")){
-                assign_run(temp);
+                if(!assign_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("while")){
-                while_run(temp);
+                if(!while_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("for")){
-                for_run(temp);
+                if(!for_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("if")){
-                if_run(temp);
+                if(!if_run(temp)){
+                    return false;
+                }
             }
             else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
                 System.out.println("运行结束");
-                break;
+                return true;
             }
             else{
                 System.out.println("出现了不该出现的关键字");
+                return false;
             }
         }
         end=ids.size();
@@ -63,7 +78,8 @@ public class RunAnalysis {
         return true;
     }
 
-    private boolean write_run(TokenTree temp){
+    private boolean write_run(TokenTree temp_write){
+        TokenTree temp=temp_write.get(0);
         ID id_temp=findIDByName(temp.getContent());
         boolean is_arr=id_temp.getIsArr();
         if(temp.hasChildren()){
@@ -163,7 +179,7 @@ public class RunAnalysis {
         TokenTree check=temp.get(1);
         TokenTree init_back=temp.get(2);
         TokenTree for_main=temp.get(3);
-        if(!assign_run(init_front)){
+        if(!assign_run(init_front.get(0))){
             return false;
         }
         boolean isContinue=run_bool_result(check.get(0));
@@ -171,7 +187,7 @@ public class RunAnalysis {
             if(!runEvery(for_main)){
                 return false;
             }
-            if(!assign_run(init_back)){
+            if(!assign_run(init_back.get(0))){
                 return false;
             }
             else{
@@ -316,17 +332,196 @@ public class RunAnalysis {
     }
 
     private double run_real_result(TokenTree temp){
-        return 0;
+        if(temp.getKind().equals("运算符")){
+            return real_arithmetic(String.valueOf(run_real_result(temp.get(0))),String.valueOf(run_real_result(temp.get(1))),temp.getContent());
+        }
+        else if(temp.getKind().equals("标识符")){
+            ID id_temp=findIDByName(temp.getContent());
+            if(id_temp.getIsArr()){
+                int index=run_int_result(temp.get(0));
+                if(index<0||index>=id_temp.getLength()){
+                    addError("数组超过下标");
+                    return 0;
+                }
+                return Double.valueOf(id_temp.get(index));
+            }
+            else{
+                return Double.valueOf(id_temp.getContent());
+            }
+        }
+        else if(temp.getKind().equals("real")){
+            return Double.valueOf(temp.getContent());
+        }
+        else if(temp.getKind().equals("int")){
+            return Double.valueOf(temp.getContent());
+        }
+        else{
+            addError("错误的Token");
+            return 0;
+        }
     }
 
     private int run_int_result(TokenTree temp){
-        return 0;
+        if(temp.getKind().equals("运算符")){
+            return int_arithmetic(String.valueOf(run_int_result(temp.get(0))),String.valueOf(run_int_result(temp.get(1))),temp.getContent());
+        }
+        else if(temp.getKind().equals("标识符")){
+            ID id_temp=findIDByName(temp.getContent());
+            if(id_temp.getIsArr()){
+                int index=run_int_result(temp.get(0));
+                if(index<0||index>=id_temp.getLength()){
+                    addError("数组越界");
+                    return 0;
+                }
+                return Integer.parseInt(id_temp.get(index));
+            }
+            return Integer.parseInt(id_temp.getContent());
+        }
+        else if(temp.getKind().equals("int")){
+            return Integer.valueOf(temp.getContent());
+        }
+        else{
+            addError("错误的Token");
+            return 0;
+        }
     }
 
     private boolean run_bool_result(TokenTree temp){
-        return false;
+        if(temp.getContent().equals("&&")||temp.getContent().equals("||")){
+            return log_arithmetic(String.valueOf(run_bool_result(temp.get(0))),String.valueOf(run_bool_result(temp.get(1))),temp.getContent());
+        }
+        else if(is_compare(temp.getContent())){
+            return com_arithmetic(String.valueOf(run_real_result(temp.get(0))),String.valueOf(run_real_result(temp.get(1))),temp.getContent());
+        }
+        else if(temp.getKind().equals("标识符")){
+            ID id_temp=findIDByName(temp.getContent());
+            if(id_temp.getIsArr()){
+                int index=run_int_result(temp.get(0));
+                if(index<0||index>=id_temp.getLength()){
+                    addError("数组越界");
+                    return false;
+                }
+                return Boolean.parseBoolean(id_temp.get(index));
+            }
+            else{
+                return Boolean.parseBoolean(id_temp.getContent());
+            }
+        }
+        else if(temp.getKind().equals("bool")){
+            return Boolean.parseBoolean(temp.getContent());
+        }
+        else {
+            addError("有报错了？");
+            return false;
+        }
     }
 
+    private boolean com_arithmetic(String com1,String com2,String op){
+        double com_first=Double.parseDouble(com1);
+        double com_second=Double.parseDouble(com2);
+        switch (op){
+            case ">":
+                if(com_first>com_second){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            case "<":
+                if(com_first<com_second){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            case "==":
+                return is_equal(com_first,com_second);
+            case "<>":
+                return !is_equal(com_first,com_second);
+            default:
+                return false;
+        }
+    }
+
+    private boolean is_equal(double d1,double d2){
+        double r=d1-d2;
+        if(r<0){
+            r=-r;
+        }
+        if(r<0.0001){
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    private boolean is_compare(String op){
+        if(op.equals("<")||op.equals(">")||op.equals("<>")||op.equals("==")){
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean log_arithmetic(String log1,String log2,String op){
+        boolean log_first=Boolean.parseBoolean(log1);
+        boolean log_second=Boolean.parseBoolean(log2);
+        switch (op){
+            case "&&":
+                return log_first&&log_second;
+            case "||":
+                return log_first||log_second;
+            default:
+                return false;
+        }
+    }
+
+    private double real_arithmetic(String num1,String num2,String op){
+        double num_first=Double.parseDouble(num1);
+        double num_second=Double.parseDouble(num2);
+        switch (op){
+            case "*":
+                return num_first*num_second;
+            case "+":
+                return num_first+num_second;
+            case "-":
+                return num_first-num_second;
+            case "/":
+                try {
+                    return num_first/num_second;
+                }catch (Exception ex){
+                    addError("除法发生错误");
+                    return 0;
+                }
+            default:
+                addError("实数运算出现未识别的运算符");
+                return 0;
+        }
+    }
+
+    private int int_arithmetic(String num1,String num2,String op){
+        int num_first=Integer.parseInt(num1);
+        int num_second=Integer.parseInt(num2);
+        switch (op){
+            case "*":
+                return num_first*num_second;
+            case "+":
+                return num_first+num_second;
+            case "-":
+                return num_first-num_second;
+            case "/":
+                try {
+                    return num_first/num_second;
+                }catch (Exception ex){
+                    addError("除法发生错误");
+                    return 0;
+                }
+            default:
+                addError("整数数运算出现未识别的运算符");
+                return 0;
+        }
+    }
 
     private ID findIDByName(String name){
         for(int counter=0;counter<ids.size();counter++){
@@ -358,6 +553,6 @@ public class RunAnalysis {
         return "";
     }
     public static void write_output(String output){
-
+        System.out.println(output);
     }
 }
