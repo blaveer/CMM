@@ -72,11 +72,55 @@ public class semanticAnalysis {
     }
 
     private void read_sem(TokenTree temp){
-        //TODO 不支持数组整体读入，每次只允许读一个数。对于数组的下标要检查其整型
+        TokenTree temp_read=temp.get(0);
+        if(temp_read.getKind().equals("标识符")){
+            if(isExist(temp_read.getContent())){
+                IDBase id=findIDByName(temp_read.getContent());
+                if(temp_read.hasChildren()){
+                    if(!id.getIsInit()){
+                        addError("数组"+temp_read.getContent()+"还未整体初始化");
+                        return;
+                    }
+                    if(!id.getIsArr()){
+                        addError("把非数组变量"+temp_read.getContent()+"当作数组使用了");
+                        return;
+                    }
+                    if(express_type_check(temp_read.get(0),"int")){
+                        addError("数组下标不是整数");
+                        return;
+                    }
+                }
+                else if(id.getIsArr()){
+                    addError("暂不支持对数组的整体读入");
+                    return;
+                }
+                else{
+                    id.setIsInit(true);
+                }
+            }
+            else{
+                addError("使用了未声明的标识符"+temp_read.getContent());
+            }
+        }
+        else{
+            addError("read函数的参数只能是标识符");
+        }
     }
 
     private void write_sem(TokenTree temp){
-
+        TokenTree write_temp=temp.get(0);
+        if(write_temp.getKind().equals("标识符")){
+            IDBase id=findIDByName(write_temp.getContent());
+            if(id==null){
+                addError("使用了未声明的的标识符"+id.getName());
+            }
+            else if(!id.getIsInit()){
+                addError("使用了未初始化的标识符"+id.getName());
+            }
+        }
+        else{
+            addError("暂不支持除标识符之外的其他形式的输出");
+        }
     }
 
     private void if_sem(TokenTree temp){
@@ -118,6 +162,7 @@ public class semanticAnalysis {
         TokenTree id_assign=assign.get(0);//这个是标识符
         String kind="";
 
+        //IDBase id_temp_assign=findIDBaseByName(id_assign.getContent());
         if(isExist(id_assign.getContent())){
             kind=findIDKindByName(id_assign.getContent());
         }
@@ -128,6 +173,15 @@ public class semanticAnalysis {
         /**对数组的某一项赋值*/
         if(id_assign.hasChildren()){//TODO 数组是由先整体赋过值之后，才能个别再赋值
             //TODO 数组应当先整体赋值
+            IDBase id_temp_assign=findIDByName(id_assign.getContent());
+            if(!id_temp_assign.getIsArr()){
+                addError("把非数组变量"+id_assign.getContent()+"当作数组变量赋值了");
+                return;
+            }
+            if(!id_temp_assign.getIsInit()){
+                addError("对于数组变量"+id_assign.getContent()+"只有对其整体赋值之后才能个别赋值");
+                return;
+            }
             TokenTree id_assign_array_length=id_assign.get(0);
             if(id_assign_array_length.getKind().equals("运算符")){
                 if(express_type_check(id_assign_array_length,"int")){
@@ -381,7 +435,26 @@ public class semanticAnalysis {
                 return type_real_check(express);
             case "bool":
                 return type_bool_check(express);
+            case "string":
+                return type_string_check(express);
             default:return false;
+        }
+    }
+
+    private boolean type_string_check(TokenTree express_string){
+        if(express_string.getKind().equals("string")){
+            return true;
+        }
+        else if(express_string.getKind().equals("标识符")){
+            if(useID(express_string,"string")){
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else{
+            return false;
         }
     }
 
@@ -515,7 +588,13 @@ public class semanticAnalysis {
     private boolean useID(TokenTree temp,String kind){
         String name=temp.getContent();
         if(useID(name,kind)){
+            IDBase temp_id=findIDByName(name);
+            boolean isArr=temp_id.getIsArr();
             if(temp.hasChildren()){
+                if(!isArr){
+                    addError("把非数组变量"+temp_id.getName()+"当作数组变量使用");
+                    return false;
+                }
                 if(type_int_check(temp.get(0))){
                     return true;
                 }
@@ -648,6 +727,7 @@ public class semanticAnalysis {
         }
         return false;
     }
+
 
     private void addError(String info){
         errorInfo=errorInfo+info+"\n";

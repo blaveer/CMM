@@ -49,7 +49,7 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 	private static String NewText=null;
 
 	public StyleEditor() {
-		initPrompt();
+		//initPrompt();
 		setDocument(new DefaultStyledDocument());
 		getDocument().addDocumentListener(this);
 		setFont(new Font(("Courier New"), Font.PLAIN, 15));
@@ -250,6 +250,7 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 //            }
 
 			int off = getCaretPosition();
+			//System.out.println(nDoc.getText(0,nDoc.getLength()));
 			setDocument(nDoc);
 			setCaretPosition(off);
 		} catch (BadLocationException e) {
@@ -310,6 +311,14 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 		}
 		return false;
 	}
+
+
+
+
+
+
+
+
 	private LinkedList<String>getPrompt(String input){
 	    //System.out.println("待提示的字符串是"+input+"换行绘");
 		LinkedList<String> prompt=new LinkedList<String>();

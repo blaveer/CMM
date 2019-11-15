@@ -91,7 +91,7 @@ public class LexAnalysis {
                                 ch= lineText.charAt(index);
                             }
                         }
-                        String tempToken=lineText.substring(start,end);
+                        String tempToken=lineText.substring(start,end-1);
                         if(err){
                             displayTokens.add(new Token(line,start,"错误",tempToken));
                             errorNum++;
@@ -100,10 +100,10 @@ public class LexAnalysis {
                         }
                         else{
                             if(matchInteger(tempToken)){
-                                tokens.add(new Token(line,start,"整数",tempToken));
+                                displayTokens.add(new Token(line,start,"整数",tempToken));
                                 tokens.add(new Token(line,start,"整数",tempToken));
                             }else if(matchReal(tempToken)){
-                                tokens.add(new Token(line,start,"实数",tempToken));
+                                displayTokens.add(new Token(line,start,"实数",tempToken));
                                 tokens.add(new Token(line,start,"实数",tempToken));
                             }
                             else{

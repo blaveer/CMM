@@ -3,6 +3,7 @@ package com.company.MyFrame;
 import com.company.CMMGra.GraAnalysis;
 import com.company.CMMLex.LexAnalysis;
 import com.company.CMMSem.semanticAnalysis;
+import com.company.Run.RunAnalysis;
 import com.company.util.JCloseableTabbedPane;
 import com.company.util.StyleEditor;
 import com.company.util.TextLineNumber;
@@ -27,6 +28,7 @@ public class myFrame extends JFrame {
     private LexAnalysis lexAnalysis;
     private GraAnalysis graAnalysis;
     private semanticAnalysis semanticAnalysis;
+    private RunAnalysis runAnalysis;
 
 
 
@@ -97,7 +99,7 @@ public class myFrame extends JFrame {
         init();
     }
     private void init(){
-        this.setSize(1240,702);
+        this.setSize(1240,720);
         this.setBackground(MainColor);
         this.setLocation(300,200);
         this.setVisible(true);
@@ -252,7 +254,7 @@ public class myFrame extends JFrame {
         proAndConPanel.setBounds(2, 475, this.getWidth()-10, 160);
         add(editPanel);
         editPanel.setBounds(2, TOOLBAR.getHeight(), this.getWidth()-8,
-                this.getHeight() - TOOLBAR.getHeight());
+                this.getHeight() - TOOLBAR.getHeight()-25);
 
 
         // region文件保存和打开对话框
@@ -306,7 +308,16 @@ public class myFrame extends JFrame {
     }
 
     public void run() {
-
+        parse();
+        if(semanticAnalysis!=null&&semanticAnalysis.getErrorNum()==0){
+            runAnalysis=new RunAnalysis(graAnalysis.getRoot());
+            consoleArea.setText("··········output··········");
+            proAndConPanel.setSelectedIndex(0);
+            if(!runAnalysis.run()){
+                problemArea.append("\n--------执行出错-------");
+                proAndConPanel.setSelectedIndex(1);
+            }
+        }
     }
 
     private void lex(){
@@ -343,7 +354,7 @@ public class myFrame extends JFrame {
             semanticAnalysis.semantic(graAnalysis.getRoot());
             if(semanticAnalysis.getErrorNum()==0){
                 problemArea.append("语法分析没问题");
-
+                graAnalysis.outToken();
             }
             else{
                 problemArea.append(semanticAnalysis.getErrorInfo());
@@ -444,13 +455,11 @@ public class myFrame extends JFrame {
                         .getText());
                 fw.close();
             } catch (IOException e2) {
+            }catch (Exception ex){
+                System.out.println("保存文件出错");
             }
         }
     }
-
-
-
-
 
     /**下面是一些内部类*/
     //region
@@ -475,4 +484,24 @@ public class myFrame extends JFrame {
         }
     }
     //endregion
+
+    public static void write(String s){
+        //System.out.println(s);
+        consoleArea.setText(consoleArea.getText()+s);
+    }
+    public static String read(String name){
+        String input=JOptionPane.showInputDialog("请输入"+name+"的值");
+        boolean is_continue=true;
+        while (is_continue){
+            if(input==null||input.equals("")){
+                JOptionPane.showMessageDialog(null, "输入为空,请重新输入");
+                input=JOptionPane.showInputDialog("请输入"+name+"的值");
+            }
+            else{
+                is_continue=false;
+            }
+        }
+        return input;
+
+    }
 }

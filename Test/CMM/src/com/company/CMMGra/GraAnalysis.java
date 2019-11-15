@@ -701,7 +701,7 @@ public class GraAnalysis {
                 && currentToken.getContent().equals("\"")) { // 匹配双引号
             counter++;
             currentToken=tokens.get(counter);
-            tempNode = new TokenTree("字符串", currentToken.getContent());
+            tempNode = new TokenTree("string", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
             if(currentToken.getContent().equals("\"")){

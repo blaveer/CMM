@@ -5,6 +5,9 @@ import com.company.Tools.TokenTree;
 
 import java.util.ArrayList;
 
+import static com.company.MyFrame.myFrame.read;
+import static com.company.MyFrame.myFrame.write;
+
 /**遗留待解决的问题，数组的下标越界检查，还有待发现的*/
 public class RunAnalysis {
     private int errorNum=0;
@@ -19,8 +22,13 @@ public class RunAnalysis {
     }
 
 
-    public void run(){
-        runEvery(root);
+    public boolean run(){
+        if(runEvery(root)){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
     private boolean runEvery(TokenTree tempRoot){
         int start=ids.size();
@@ -103,9 +111,15 @@ public class RunAnalysis {
         return true;
     }
 
-    private boolean read_run(TokenTree temp){
-        String kind=temp.getKind();
+    private boolean read_run(TokenTree tempRoot){
+        TokenTree temp=tempRoot.get(0);
         ID id_temp=findIDByName(temp.getContent());
+        String kind=id_temp.getKind();
+//        if(id_temp==null){
+//            addError("使用了未声明的标识符");
+//            return false;
+//        }
+        System.out.println(temp.getContent());
         boolean isArr=id_temp.getIsArr();
         int index=0;
         if(temp.hasChildren()){
@@ -114,7 +128,7 @@ public class RunAnalysis {
                 return false;
             }
         }
-        String input=read_input();
+        String input=read_input(temp.getContent());
         switch (kind){
             case "int":
                 int input_int=0;
@@ -239,6 +253,7 @@ public class RunAnalysis {
             TokenTree array_index=id_assign.get(0);
             int index=run_int_result(array_index);
             if(index<0||index>=id_temp.getLength()){
+                addError("对于数组"+id_assign.getContent()+"的赋值数组下标溢出");
                 return false;
             }
             String result=run_all_result(id_assign_init,kind);
@@ -326,8 +341,34 @@ public class RunAnalysis {
                 return String.valueOf(run_real_result(temp));
             case "bool":
                 return String.valueOf(run_bool_result(temp));
+            case "string":
+                return run_string_result(temp);
             default:
                 return null;
+        }
+    }
+
+    private String run_string_result(TokenTree temp){
+        if(temp.getKind().equals("标识符")){
+            ID id_temp=findIDByName(temp.getContent());
+            if(id_temp.getIsArr()){
+                int index=run_int_result(temp.get(0));
+                if(index<0||index>=id_temp.getLength()){
+                    addError("对于数组"+id_temp.getName()+"的使用越界");
+                    return null;
+                }
+                return id_temp.get(index);
+            }
+            else{
+                return id_temp.getContent();
+            }
+        }
+        else if(temp.getKind().equals("string")){
+            return temp.getContent();
+        }
+        else {
+            addError("语义分析还是有问题，不应该执行到这的");
+            return null;
         }
     }
 
@@ -549,10 +590,14 @@ public class RunAnalysis {
     }
 
     /**下面这个函数是从某一个地方读一个字符串，具体待定*/
-    public static String read_input(){
-        return "";
+    public static String read_input(String name){
+        return read(name);
     }
     public static void write_output(String output){
+        write("\n"+output);
         System.out.println(output);
+    }
+    public String getErrorInfo(){
+        return errorInfo;
     }
 }

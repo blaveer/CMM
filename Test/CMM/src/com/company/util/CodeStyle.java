@@ -1,5 +1,7 @@
 package com.company.util;
 
+import com.company.CMMLex.LexAnalysis;
+//import com.company.Tools.Token;
 import com.company.compiler.CMMLexer;
 import com.company.model.ConstVar;
 import com.company.model.Token;
@@ -46,10 +48,11 @@ public class CodeStyle {
 	private static final int FIRST_POSITION_Y = 20;
 	// 第一行以后每行字符的长度
 	private static final int LINE_LENGTH_Y = 17;
-	// 关键字集合
+	// 关键字集合这个逼玩意就在这个类中用过
 	private static final HashSet<String> keywords = new HashSet<String>();
 	private ArrayList<Token> displayTokens = new ArrayList<Token>();
 
+	//private LexAnalysis lexer=new LexAnalysis();
 	private CMMLexer lexer = new CMMLexer();
 
 	public CodeStyle() {
@@ -105,6 +108,7 @@ public class CodeStyle {
 	 * @param doc 填充的StyledDocument对象
 	 */
 	public void markStyle(String text, StyledDocument doc, boolean cmmCompiler) {
+		//System.out.println(cmmCompiler);
 		if (!cmmCompiler) {
 			try {
 				StringTokenizer tokenize = new StringTokenizer(text, DELIM,
@@ -120,6 +124,7 @@ public class CodeStyle {
 					} else {
 						s = styleContext.getStyle("none");
 					}
+					System.out.println(doc.getLength()+"     "+str);
 					doc.insertString(doc.getLength(), str, s);
 				}
 			} catch (BadLocationException e) {
@@ -127,6 +132,7 @@ public class CodeStyle {
 			}
 		}
 		else {
+			//lexer.lex(text);
 			lexer.execute(text);
 			try {
 				displayTokens = lexer.getDisplayTokens();
@@ -153,6 +159,10 @@ public class CodeStyle {
 					} else {
 						s = styleContext.getStyle("none");
 					}
+					System.out.println(doc.getLength()+"     "+token.getContent());
+					System.out.println(doc.getText(0,doc.getLength()));
+					System.out.println("看看有几个换行");
+
 					doc.insertString(doc.getLength(), token.getContent(), s);
 				}
 			} catch (BadLocationException e) {
@@ -199,8 +209,7 @@ public class CodeStyle {
 		}
 	}
 
-	private void drawRedWaveLine(Graphics g, int x, int y, int sectionX,
-			int sectionY, int length) {
+	private void drawRedWaveLine(Graphics g, int x, int y, int sectionX, int sectionY, int length) {
 		Color c = g.getColor();
 		g.setColor(Color.red);
 		boolean up = true;
