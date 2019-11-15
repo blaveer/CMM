@@ -7,10 +7,10 @@ import java.util.ArrayList;
 public class ID {
     private String kind;
     private String name;
-    public boolean isArr=false;
+    private boolean isArr=false;
     private String content;
-    private boolean isInit;//标识是否初始化的
-    public int length=0;
+    private boolean isInit;//标识是否初始化的,这个似乎没用了，因为当时用到这个类的时候，已经不存在没初始化就使用的情况了，暂留，以备不时之需
+    private int length=0;
     public String[] arr=null;
 
     /**普通变量声明*/
@@ -91,9 +91,29 @@ public class ID {
     public String getContent(){
         return content;
     }
+    public int getLength(){
+        return length;
+    }
+    public boolean getIsArr(){
+        return isArr;
+    }
     public void setKind(String kind){this.kind=kind;}
     public void setName(String name){this.name=name;}
     public void setContent(String content){this.content=content;}
+    public void setArr(ArrayList<String> arr){
+        this.arr=new String[arr.size()];
+        for(int counter=0;counter<arr.size();counter++){
+            this.arr[counter]=arr.get(counter);
+        }
+    }
+
+    public String getArr(){
+        String r="";
+        for(int counter=0;counter<length;counter++){
+            r=r+arr[counter]+"   ";
+        }
+        return r;
+    }
 
     //endregion
 

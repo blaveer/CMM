@@ -72,7 +72,7 @@ public class semanticAnalysis {
     }
 
     private void read_sem(TokenTree temp){
-
+        //TODO 不支持数组整体读入，每次只允许读一个数。对于数组的下标要检查其整型
     }
 
     private void write_sem(TokenTree temp){
@@ -126,7 +126,8 @@ public class semanticAnalysis {
             return;
         }
         /**对数组的某一项赋值*/
-        if(id_assign.hasChildren()){
+        if(id_assign.hasChildren()){//TODO 数组是由先整体赋过值之后，才能个别再赋值
+            //TODO 数组应当先整体赋值
             TokenTree id_assign_array_length=id_assign.get(0);
             if(id_assign_array_length.getKind().equals("运算符")){
                 if(express_type_check(id_assign_array_length,"int")){
@@ -157,7 +158,8 @@ public class semanticAnalysis {
             }
             TokenTree id_assign_array_one_init=assign.get(1);//这个是等号后面的
             if(id_assign_array_one_init.getKind().equals("标识符")){
-                if(useID(id_assign_array_one_init.getContent(),kind)){
+                //if(useID(id_assign_array_one_init.getContent(),kind)){ TODO
+                if(useID(id_assign_array_one_init,kind)){
                     findIDByName(id_assign.getContent()).setIsInit(true);
                 }
                 else{
@@ -192,7 +194,6 @@ public class semanticAnalysis {
                         addError("在对数组"+id_assign.getContent()+"进行赋值时采用了不合理的数据类型");
                     }
                 }
-                //TODO 这里缺乏一种数组给数组整体赋值的情况，安全起见，就不提供了
                 else{
                     addError("对于被声明为数组的标识符"+id_assign.getContent()+"采用了不合理的整体赋值方式");
                 }
@@ -203,7 +204,8 @@ public class semanticAnalysis {
                 }
                 else{
                     if(id_init.getKind().equals("标识符")){
-                        if(useID(id_init.getContent(),kind)){
+                        //if(useID(id_init.getContent(),kind)){
+                        if(useID(id_init,kind)){
                             //TODO 这里应当添加用数组的某一项为其赋值的情况，包括声明的那个地方也应当改一下，15日凌晨写，望白天能改
                             findIDByName(id_assign.getContent()).setIsInit(true);
                         }
@@ -275,7 +277,8 @@ public class semanticAnalysis {
                         }
                     }
                     if(one_init.getKind().equals("标识符")){
-                        if(useID(one_init.getContent(),kind)){
+                        //if(useID(one_init.getContent(),kind)){ //TODO
+                        if(useID(one_init,kind)){
                             ids.add(new IDBase(kind,one_id.getContent(),1,true));
                         }
                         else{
@@ -327,7 +330,8 @@ public class semanticAnalysis {
 
     private void check_sem(TokenTree temp){
         if(temp.getKind().equals("标识符")){
-            if(useID(temp.getContent(),"bool")){
+            //if(useID(temp.getContent(),"bool")){
+            if(useID(temp,"bool")){
                 addLog("check语句语义分析成功");
             }
             else{
@@ -366,7 +370,7 @@ public class semanticAnalysis {
                 return false;
             }
         }
-        return true;//TODO 待做
+        return true;
     }
 
     private boolean express_type_check(TokenTree express,String kind){
@@ -391,7 +395,8 @@ public class semanticAnalysis {
         }
         else if(express_bool.getKind().equals("标识符")){
             //if(typeCompatibility("bool",findIDKindByName(express_bool.getContent()))){
-            if(useID(express_bool.getContent(),"bool")){
+            //if(useID(express_bool.getContent(),"bool")){
+            if(useID(express_bool,"bool")){
                 return true;
             }
             else{
@@ -409,19 +414,21 @@ public class semanticAnalysis {
     private boolean type_real_check(TokenTree express_real){
         if(express_real.getKind().equals("标识符")){
             if(express_real.hasChildren()){
-                if(!useID(express_real.getContent(),"real")){
+                //if(!useID(express_real.getContent(),"real")){
+                if(!useID(express_real,"real")){
                     //addError("标识符"+express_int.getContent()+"不存在");
                     return false;
                 }
                 if(express_type_check(express_real.get(0),"int")){
-                    addLog("asasas");
+                    addLog("asasas");/**????????这是啥玩意**/
                 }
                 else{
                     return false;
                 }
             }
             else{
-                if(!useID(express_real.getContent(),"real")){
+                //if(!useID(express_real.getContent(),"real")){
+                if(!useID(express_real,"real")){
                     return false;
                 }
             }
@@ -441,7 +448,8 @@ public class semanticAnalysis {
     private boolean type_int_check(TokenTree express_int){
         if(express_int.getKind().equals("标识符")){
             if(express_int.hasChildren()){
-                if(!useID(express_int.getContent(),"int")){
+                //if(!useID(express_int.getContent(),"int")){
+                if(!useID(express_int,"int")){
                     //addError("标识符"+express_int.getContent()+"不存在");
                     return false;
                 }
@@ -453,7 +461,8 @@ public class semanticAnalysis {
                 }
             }
             else{
-                if(!useID(express_int.getContent(),"int")){
+                //if(!useID(express_int.getContent(),"int")){
+                if(!useID(express_int,"int")){
                     return false;
                 }
             }
@@ -496,6 +505,31 @@ public class semanticAnalysis {
         return false;
     }
 
+
+    /**
+     * 关于这个函数，是因为发现比如int a=b[1]
+     * 这样的赋值方式没有检查1这个东西是否符合int类型，所以单独添加了这个函数，
+     * 再添加后更改的函数是type检查中int2处，real两处，bool一处，在赋值和声明函数中也都有，check_sem一处
+     * 如有报错，待解决
+     * */
+    private boolean useID(TokenTree temp,String kind){
+        String name=temp.getContent();
+        if(useID(name,kind)){
+            if(temp.hasChildren()){
+                if(type_int_check(temp.get(0))){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            }
+            else{
+                return true;
+            }
+        }else{
+            return false;
+        }
+    }
     /**其中name是使用的标识符的名字，kind是希望的类型*/
     private boolean useID(String name,String kind){
         if(isExist(name)){
