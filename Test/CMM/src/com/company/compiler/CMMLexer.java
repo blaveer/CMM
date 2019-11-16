@@ -68,6 +68,12 @@ public class CMMLexer {
 		return displayTokens;
 	}
 
+	public void outAllToken(){
+		for(int i=0;i<displayTokens.size();i++){
+			System.out.println(displayTokens.get(i).getKind()+"    "+displayTokens.get(i).getContent());
+		}
+	}
+
 	public void setDisplayTokens(ArrayList<Token> displayTokens) {
 		this.displayTokens = displayTokens;
 	}

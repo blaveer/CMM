@@ -252,6 +252,7 @@ public class StyleEditor extends JTextPane implements DocumentListener {
 			int off = getCaretPosition();
 			//System.out.println(nDoc.getText(0,nDoc.getLength()));
 			setDocument(nDoc);
+
 			setCaretPosition(off);
 		} catch (BadLocationException e) {
 			e.printStackTrace();

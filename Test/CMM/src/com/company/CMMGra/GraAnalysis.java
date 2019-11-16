@@ -892,4 +892,16 @@ public class GraAnalysis {
         return Program;
     }
     //endregion
+
+    public String getTree(){
+        String r="";
+        if(errorNum!=0){
+            return "语法分析有错误";
+        }else{
+            if(Program.hasChildren()){
+                r=r+Program.getTokenTree("");
+            }
+        }
+        return r;
+    }
 }

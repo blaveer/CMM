@@ -87,6 +87,10 @@ public class myFrame extends JFrame {
     //控制台和错误信息
     public static JTabbedPane proAndConPanel;
 
+    public static JTextArea lex_out=new JTextArea();
+    public static JTextArea gra_out=new JTextArea();
+    public static JTabbedPane out_panel;
+
     //保存和打开对话框
     private FileDialog filedialog_save, filedialog_load;
 
@@ -235,6 +239,28 @@ public class myFrame extends JFrame {
         editLabelPanel.add(editLabel, BorderLayout.WEST);
         editLabelPanel.setBackground(Color.LIGHT_GRAY);
 
+
+
+        gra_out.setEditable(false);
+        lex_out.setEditable(false);
+        gra_out.setFont(conAndErrFont);
+        lex_out.setFont(conAndErrFont);
+        out_panel=new JTabbedPane();
+        out_panel.setFont(TreeFont);
+        out_panel.add(new JScrollPane(lex_out),"词法分析结果");
+        out_panel.add(new JScrollPane(gra_out),"语法分析结果");
+        out_panel.setSelectedIndex(0);
+        JPanel resultPanel = new JPanel(new BorderLayout());
+        JLabel resultLabel = new JLabel("|分析结果显示区");
+        JPanel resultLabelPanel = new JPanel(new BorderLayout());
+        resultLabel.setFont(LABELFONT);
+        resultLabelPanel.add(resultLabel, BorderLayout.WEST);
+        resultLabelPanel.setBackground(Color.LIGHT_GRAY);
+        resultPanel.add(resultLabelPanel, BorderLayout.NORTH);
+        resultPanel.add(out_panel, BorderLayout.CENTER);
+        add(resultPanel);
+        resultPanel.setBounds(1005,TOOLBAR.getHeight(),230,this.getHeight()-TOOLBAR.getHeight());
+
         //  region控制条和错误列表区
         consoleArea.setEditable(false);
         problemArea.setRows(6);
@@ -249,11 +275,11 @@ public class myFrame extends JFrame {
         editPanel.add(editLabelPanel);//头部
         editPanel.add(editTabbedPane);//代码区
         editPanel.add(proAndConPanel);//输出区域，错误输出区域
-        editLabelPanel.setBounds(2, 0, this.getWidth()-10, 15);
-        editTabbedPane.setBounds(2, 15, this.getWidth()-10, 462);
-        proAndConPanel.setBounds(2, 475, this.getWidth()-10, 160);
+        editLabelPanel.setBounds(2, 0, 1000, 15);
+        editTabbedPane.setBounds(2, 15, 1000, 462);
+        proAndConPanel.setBounds(2, 475, 1000, 160);
         add(editPanel);
-        editPanel.setBounds(2, TOOLBAR.getHeight(), this.getWidth()-8,
+        editPanel.setBounds(2, TOOLBAR.getHeight(), 1000,
                 this.getHeight() - TOOLBAR.getHeight()-25);
 
 
@@ -333,6 +359,10 @@ public class myFrame extends JFrame {
         problemArea.append(lexAnalysis.getErrorInfo());
         problemArea.append("该程序中共有" + lexAnalysis.getErrorNum() + "个词法错误！\n");
         proAndConPanel.setSelectedIndex(1);
+        String token=lexAnalysis.getToken();
+        System.out.println(token);
+        lex_out.setText(token);
+        out_panel.setSelectedIndex(0);
     }
     private void parse(){
         lex();
@@ -350,6 +380,8 @@ public class myFrame extends JFrame {
             problemArea.append(graAnalysis.getErrorInfo());
             problemArea.append("该程序中共有" + graAnalysis.getErrorNum() + "个词法错误！\n");
         }else{
+            gra_out.setText(graAnalysis.getTree());
+            out_panel.setSelectedIndex(1);
             semanticAnalysis=new semanticAnalysis(graAnalysis.getRoot());
             semanticAnalysis.semantic(graAnalysis.getRoot());
             if(semanticAnalysis.getErrorNum()==0){

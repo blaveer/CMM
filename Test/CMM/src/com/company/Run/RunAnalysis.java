@@ -16,6 +16,7 @@ public class RunAnalysis {
     private TokenTree root;
     private ArrayList<ID> ids=new ArrayList<ID>();
     private String out="";
+    private final int Max_Cir=10000;
 
     public RunAnalysis(TokenTree root){
         this.root=root;
@@ -189,6 +190,7 @@ public class RunAnalysis {
     }
 
     private boolean for_run(TokenTree temp){
+        int counter=0;
         TokenTree init_front=temp.get(0);
         TokenTree check=temp.get(1);
         TokenTree init_back=temp.get(2);
@@ -198,6 +200,11 @@ public class RunAnalysis {
         }
         boolean isContinue=run_bool_result(check.get(0));
         while(isContinue){
+            counter++;
+            if(counter>Max_Cir){
+                addError("循环次数已经大于"+Max_Cir+"次");
+                return false;
+            }
             if(!runEvery(for_main)){
                 return false;
             }
@@ -230,10 +237,16 @@ public class RunAnalysis {
     }
 
     private boolean while_run(TokenTree temp){
+        int counter=0;
         TokenTree while_check=temp.get(0);
         TokenTree while_main=temp.get(1);
         boolean isContinue=run_bool_result(while_check.get(0));
         while(isContinue){
+            counter++;
+            if(counter>Max_Cir){
+                addError("循环次数已经大于"+Max_Cir+"次");
+                return false;
+            }
             if(!runEvery(while_main)){
                 return false;
             }

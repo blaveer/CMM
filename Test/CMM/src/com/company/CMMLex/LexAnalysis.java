@@ -24,10 +24,12 @@ public class LexAnalysis {
         //TODO /r也要解决 String[] lexText=new String[]();
         for(int counter=0;counter<lexSplit.length;counter++){
             if(lexSplit[counter]==null){
+                displayTokens.add(new Token(counter+1,0,"分隔符","\n"));
                 continue;
             }
             if(isNotation&&(!lexSplit[counter].contains("*/"))){
                 displayTokens.add(new Token(counter+1,0,"annotation",lexSplit[counter]));
+                displayTokens.add(new Token(counter+1,lexSplit[counter].length(),"分隔符","\n"));
             }
             else{
                 lexLine(lexSplit[counter],counter+1);
@@ -43,7 +45,8 @@ public class LexAnalysis {
         lineText=lineText+"\n";//这么做的目的是为了防止下面在++的溢出
         if(lineText.contains("*/")&&isNotation){
             String[] temp=lineText.split("\\*/");
-            displayTokens.add(new Token(line,0,"annotation",temp[0]+"*/"));
+            displayTokens.add(new Token(line,0,"annotation",temp[0]));
+            displayTokens.add(new Token(line,temp[0].length(),"分隔符","*/"));
             isNotation=false;
             if(temp[0]!=null){
                 index=temp[0].length()+2;
@@ -119,7 +122,8 @@ public class LexAnalysis {
                         tokens.add(new Token(line,index+1,"LLB","("));
                     }
                 }else if(ch==')'){
-                    displayTokens.add(new Token(line,index+1,"RLB","）"));
+                    //displayTokens.add(new Token(line,index+1,"RLB","）"));
+                    displayTokens.add(new Token(line,index+1,"RLB",")"));
                     tokens.add(new Token(line,index+1,"RLB","）"));
                     index++;
                     ch= lineText.charAt(index);
@@ -239,10 +243,12 @@ public class LexAnalysis {
                 index++;
                 ch= lineText.charAt(index);
                 if(ch=='/'){
+                    displayTokens.add(new Token(line,start+1,"分隔符","//"));
                     start=start+2;
                     end=lineText.length()-1;
                     String tempToken=lineText.substring(start,end);
                     displayTokens.add(new Token(line,start+1,"annotation",tempToken));
+                    displayTokens.add(new Token(line,lineText.length(),"分隔符","\n"));
                     break;//直接结束整个while
                 }
                 else if(ch=='*'){
@@ -250,15 +256,18 @@ public class LexAnalysis {
                     index++;
                     ch= lineText.charAt(index);
                     isNotation=true;
+                    displayTokens.add(new Token(line,start+1,"分隔符","/*"));
                     while (true){
                         if(ch=='\n'){
                             end=lineText.length()-1;
+                            displayTokens.add(new Token(line,lineText.length(),"分隔符","\n"));
                             break;
                         }
                         else if(ch=='*'){
                             index++;
                             ch= lineText.charAt(index);
                             if(ch=='/'){
+                                displayTokens.add(new Token(line,start+1,"分隔符","*/"));
                                 isNotation=false;
                                 end=index-1;
                                 index++;
@@ -368,6 +377,7 @@ public class LexAnalysis {
                 }
             }
             else if(ch=='\n'){
+                displayTokens.add(new Token(line,index+1,"分隔符","\n"));
                 break;
             }
             else if(ch=='&'){
@@ -530,6 +540,19 @@ public class LexAnalysis {
     public void outToken(){
         for(int i=0;i<tokens.size();i++){
             System.out.println(tokens.get(i).getKind()+"    "+tokens.get(i).getContent());
+        }
+    }
+
+    public String getToken(){
+        String r="类型    内容\n";
+        for(int i=0;i<tokens.size();i++){
+            r=r+tokens.get(i).getKind()+"   "+tokens.get(i).getContent()+"\n";
+        }
+        return r;
+    }
+    public void outAllToken(){
+        for(int i=0;i<displayTokens.size();i++){
+            System.out.println(displayTokens.get(i).getKind()+"    "+displayTokens.get(i).getContent());
         }
     }
 }

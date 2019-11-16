@@ -38,6 +38,13 @@ public class TokenTree {
             //System.out.println(kong+kind+(i+1));
         }
     }
+    public String getTokenTree(String kong){
+        String s=kong+"|"+kind+"   "+content+"\n";
+        for(int i=0;i<children.size();i++) {
+            s=s+children.get(i).getTokenTree(kong+"|    ");
+        }
+        return s;
+    }
 
 
     public String getKind(){

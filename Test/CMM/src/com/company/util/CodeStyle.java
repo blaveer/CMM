@@ -1,10 +1,10 @@
 package com.company.util;
 
 import com.company.CMMLex.LexAnalysis;
-//import com.company.Tools.Token;
+import com.company.Tools.Token;
 import com.company.compiler.CMMLexer;
 import com.company.model.ConstVar;
-import com.company.model.Token;
+//import com.company.model.Token;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -33,6 +33,7 @@ public class CodeStyle {
 
 	// 注释颜色
 	private static final Color COMMENT_FOREGROUND = new Color(57, 150, 48);
+
 	// 关键字颜色
 	private static final Color KEYWORDS_FOREGROUND = new Color(0, 0, 255);
 	// 变量颜色
@@ -52,8 +53,8 @@ public class CodeStyle {
 	private static final HashSet<String> keywords = new HashSet<String>();
 	private ArrayList<Token> displayTokens = new ArrayList<Token>();
 
-	//private LexAnalysis lexer=new LexAnalysis();
-	private CMMLexer lexer = new CMMLexer();
+	private LexAnalysis lexer=new LexAnalysis();
+	//private CMMLexer lexer = new CMMLexer();
 
 	public CodeStyle() {
 		// 添加默认样式
@@ -132,13 +133,16 @@ public class CodeStyle {
 			}
 		}
 		else {
-			//lexer.lex(text);
-			lexer.execute(text);
+			lexer=new LexAnalysis();
+			lexer.lex(text);
+
+			//lexer.execute(text);
 			try {
 				displayTokens = lexer.getDisplayTokens();
+				//lexer.outAllToken();
 				for (Token token : displayTokens) {
 					Style s = null;
-					if (keywords.contains(token.getContent())&&token.getKind().equals("关键字")) {
+					if (keywords.contains(token.getContent())&&token.getKind().equals("保留字")) {
 						s = styleContext.getStyle("keywords");
 						StyleConstants.setBold(s, true);
 					} else if (token.getKind().equals("标识符")) {
@@ -146,7 +150,7 @@ public class CodeStyle {
 						StyleConstants.setBold(s, true);
 					} else if (token.getContent().equals("//")) {
 						s = styleContext.getStyle("comment");
-					} else if (token.getKind().equals("注释")) {
+					} else if (token.getKind().equals("annotation")) {
 						s = styleContext.getStyle("comment");
 					} else if (token.getContent().equals("/*")) {
 						s = styleContext.getStyle("comment");
@@ -159,9 +163,9 @@ public class CodeStyle {
 					} else {
 						s = styleContext.getStyle("none");
 					}
-					System.out.println(doc.getLength()+"     "+token.getContent());
-					System.out.println(doc.getText(0,doc.getLength()));
-					System.out.println("看看有几个换行");
+//					System.out.println(doc.getLength()+"     "+token.getContent());
+//					System.out.println(doc.getText(0,doc.getLength()));
+//					System.out.println("看看有几个换行");
 
 					doc.insertString(doc.getLength(), token.getContent(), s);
 				}
