@@ -17,11 +17,12 @@ public class RunAnalysis {
     private ArrayList<ID> ids=new ArrayList<ID>();
     private String out="";
     private final int Max_Cir=10000;
+    private boolean is_break=false;
+    private boolean is_continue=false;
 
     public RunAnalysis(TokenTree root){
         this.root=root;
     }
-
 
     public boolean run(){
         if(runEvery(root)){
@@ -31,6 +32,7 @@ public class RunAnalysis {
             return false;
         }
     }
+
     private boolean runEvery(TokenTree tempRoot){
         int start=ids.size();
         int end=ids.size();
@@ -71,6 +73,22 @@ public class RunAnalysis {
                 if(!if_run(temp)){
                     return false;
                 }
+                else{
+                    if(is_continue==true){
+                        return true;
+                    }
+                    else if(is_break==true){
+                        return true;
+                    }
+                }
+            }
+            else if(temp.getContent().equals("break")){
+                is_break=true;
+                return true;
+            }
+            else if(temp.getContent().equals("continue")){
+                is_continue=true;
+                return true;
             }
             else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
                 System.out.println("运行结束");
@@ -208,6 +226,19 @@ public class RunAnalysis {
             if(!runEvery(for_main)){
                 return false;
             }
+            else{
+                if(is_continue){
+                    is_continue=false;
+                    //continue;
+                    /**这个地方进行过一些测试，在for循环中，continue之后，是能够继续执行后面的赋值语句，然后判断是否符合循环的条件
+                     * 所以，总体来说，如果for中执行到了continue那就是忽略for循环中剩下的代码，其余正常执行，该干嘛干嘛
+                     * 而break语句执行完之后就是直接出去，啥都不管*/
+                }
+                else if(is_break){
+                    is_break=false;
+                    break;
+                }
+            }
             if(!assign_run(init_back.get(0))){
                 return false;
             }
@@ -249,6 +280,16 @@ public class RunAnalysis {
             }
             if(!runEvery(while_main)){
                 return false;
+            }
+            else{
+                if(is_break){
+                    is_break=false;
+                    break;
+                }
+                else if(is_continue){
+                    is_continue=false;
+                    continue;
+                }
             }
             isContinue=run_bool_result(while_check.get(0));
         }

@@ -50,6 +50,9 @@ public class semanticAnalysis {
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("if")){
                 if_sem(temp);
             }
+            else if(temp.getContent().equals("break")||temp.getContent().equals("continue")){
+                return;
+            }
             else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
                 System.out.println("语义分析结束");
                 break;

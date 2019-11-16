@@ -11,7 +11,10 @@ import com.company.util.TextLineNumber;
 import javax.swing.*;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.undo.UndoManager;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -48,12 +51,19 @@ public class myFrame extends JFrame {
     //控制台和错误列表字体
     private Font conAndErrFont = new Font("微软雅黑", Font.PLAIN, 14);
 
+    //Undo管理器
+    private final UndoManager undo = new UndoManager();
+    private UndoableEditListener undoHandler = new UndoHandler();
+
     //region 菜单栏
     private static JMenu fileMenu;
     private JMenuItem newItem;
     private JMenuItem openItem;
     private JMenuItem saveItem;
     private JMenuItem exitItem;
+
+    private static JMenu editMenu;
+    private JMenuItem undoItem;
 
     private static JMenu runMenu;
     private JMenuItem lexItem;
@@ -110,6 +120,7 @@ public class myFrame extends JFrame {
         this.setResizable(false);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setJMenuBar(MENUBAR);
+        //region 菜单栏文件处
         fileMenu = new JMenu("文 件(F)");
         fileMenu.setMnemonic(KeyEvent.VK_F);
         MENUBAR.add(fileMenu);
@@ -129,11 +140,46 @@ public class myFrame extends JFrame {
                 "images/exit.png"));
         exitItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
                 ActionEvent.CTRL_MASK));
+        newItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent paramActionEvent) {
+                create(null);
+            }
+        });
+        openItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                open();
+            }
+        });
+        saveItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                save();
+            }
+        });
+        exitItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
         fileMenu.add(newItem);
         fileMenu.add(openItem);
         fileMenu.add(saveItem);
         fileMenu.addSeparator();
         fileMenu.add(exitItem);
+        //endregion
+
+        editMenu = new JMenu("编辑(E)");
+        undoItem = new JMenuItem("撤  销", new ImageIcon(
+                "images/undo.png"));
+        undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
+                ActionEvent.CTRL_MASK));
+        undoItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                undo();
+            }
+        });
+        editMenu.add(undoItem);
+        MENUBAR.add(editMenu);
 //        editMenu=new JMenu("编辑(E)");
 //        MENUBAR.add(editMenu);
 
@@ -222,6 +268,7 @@ public class myFrame extends JFrame {
         scrollPane.setRowHeaderView(tln);
         editor.addMouseListener(new DefaultMouseAdapter());
         editor.addCaretListener(new StatusListener());
+        editor.getDocument().addUndoableEditListener((UndoableEditListener)undoHandler);
         addWindowListener(new WindowAdapter() {
             public void windowOpened(WindowEvent evt) {
                 editor.requestFocus();
@@ -416,6 +463,7 @@ public class myFrame extends JFrame {
 
         editor.addMouseListener(new DefaultMouseAdapter());
         editor.addCaretListener(new StatusListener());
+        editor.getDocument().addUndoableEditListener(undoHandler);
         map.put(scrollPane, editor);
         editTabbedPane.add(scrollPane, filename);
         editTabbedPane.setSelectedIndex(editTabbedPane.getTabCount() - 1);
@@ -493,9 +541,33 @@ public class myFrame extends JFrame {
         }
     }
 
+    private void undo(){
+//        System.out.println("你可记得");
+//        System.out.println(undo.isInProgress());
+        if (undo.canUndo()) {
+            try {
+                undo.undo();
+            } catch (Exception e) {
+                //System.out.println(e.toString());
+                e.printStackTrace();
+            }
+        }
+        else{
+            //System.out.println("不可重做");
+        }
+    }
+
     /**下面是一些内部类*/
     //region
     // 内部类：监听鼠标右键
+
+    // 内部类：Undo管理
+    class UndoHandler implements UndoableEditListener {
+        public void undoableEditHappened(UndoableEditEvent e) {
+            undo.addEdit(e.getEdit());
+        }
+    }
+
     class DefaultMouseAdapter extends MouseAdapter {
         public void mouseReleased(MouseEvent e) {
             if (SwingUtilities.isRightMouseButton(e)) {

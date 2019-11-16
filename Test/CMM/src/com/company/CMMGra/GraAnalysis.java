@@ -16,6 +16,8 @@ public class GraAnalysis {
     // 分析后得到的tokens集合，用于其后的语法及语义分析
     private ArrayList<Token> tokens = new ArrayList<Token>();
 
+    private int isCir=0;
+
     //语法分析的根节点
     private TokenTree Program=new TokenTree("关键字","root");
 
@@ -40,6 +42,31 @@ public class GraAnalysis {
             Program.children.add(statement());
         }
     }
+
+    private TokenTree function_stm(){
+        TokenTree temp=null;
+        if(currentToken!=null&&(currentToken.getContent().equals("void")
+                                    ||currentToken.getContent().equals("int")
+                                    ||currentToken.getContent().equals("real")
+                                    ||currentToken.getContent().equals("bool")
+                                    ||currentToken.getContent().equals("string"))){
+            TokenTree return_type=new TokenTree("返回值",currentToken.getContent());
+            counter++;
+            currentToken=tokens.get(counter);
+            if(currentToken!=null&&currentToken.getKind().equals("标识符")) {
+
+            }
+        }
+        else if(currentToken!=null&&currentToken.getContent().equals("finish")){
+            counter++;
+            temp=new TokenTree("finish","finish");
+        }
+        else{
+            temp=new TokenTree("错误","以错误的Token开始");
+        }
+        return temp;
+    }
+
     /**
     * 语句可进行分类为
      * 声明语句，以那几个关键字开始
@@ -74,6 +101,22 @@ public class GraAnalysis {
         }
         else if(currentToken!=null&&currentToken.getContent().equals("read")){
             state=read_stm();
+        }
+        else if(currentToken!=null&&(currentToken.getContent().equals("break")||currentToken.getContent().equals("continue"))){
+            state=new TokenTree("关键字",currentToken.getContent());
+            if(!(isCir>0)){
+                addError(currentToken.getLine(),currentToken.getCulomn(),"此处有不合理的token");
+            }
+            counter++;
+            currentToken=tokens.get(counter);
+            if(currentToken.getContent().equals(";")){
+                counter++;
+                currentToken=tokens.get(counter);
+            }
+            else{
+                addError(currentToken.getLine(),currentToken.getCulomn(),"缺少分号");
+            }
+
         }
         else if(currentToken.getLine()==0){
             counter++;
@@ -243,6 +286,7 @@ public class GraAnalysis {
             currentToken=tokens.get(counter);
         }
         TokenTree while_main=new TokenTree("关键字","while_main");
+        isCir++;
         if(haaBB){
             //这种写法是不健康的，要检测一下万一}整个未结束的情况
             while(!currentToken.getKind().equals("RBB")){
@@ -256,6 +300,7 @@ public class GraAnalysis {
             counter++;
             currentToken=tokens.get(counter);
         }
+        isCir--;
         while_token.children.add(while_main);
         return while_token;
     }
@@ -301,6 +346,7 @@ public class GraAnalysis {
             currentToken=tokens.get(counter);
         }
         //如果检测到大括号
+        isCir++;
         if(hasBB){
             while(!currentToken.getKind().equals("RBB")){
                 for_main.children.add(statement());
@@ -314,6 +360,7 @@ public class GraAnalysis {
             counter++;
             currentToken=tokens.get(counter);
         }
+        isCir--;
         forTemp.children.add(for_main);
         return forTemp;
     }
