@@ -380,6 +380,12 @@ public class LexAnalysis {
                 displayTokens.add(new Token(line,index+1,"分隔符","\n"));
                 break;
             }
+            else if(ch=='!'){
+                tokens.add(new Token(line,index,"运算符","!"));
+                displayTokens.add(new Token(line,index,"运算符","!"));
+                index++;
+                ch=lineText.charAt(index);
+            }
             else if(ch=='&'){
                 index++;
                 ch=lineText.charAt(index);

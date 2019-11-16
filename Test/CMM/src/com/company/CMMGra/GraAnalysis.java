@@ -713,6 +713,17 @@ public class GraAnalysis {
             }
 
         }
+        else if(currentToken!=null&&currentToken.getContent().equals("!")){
+            tempNode=new TokenTree("运算符","!");
+            counter++;
+            currentToken=tokens.get(counter);
+            if(currentToken.getContent().equals("(")){
+                tempNode.children.add(express_stm());
+            }
+            else{
+                tempNode.children.add(factor());
+            }
+        }
         else {
             if (currentToken != null
                 && !currentToken.getContent().equals(";")) {
@@ -723,6 +734,7 @@ public class GraAnalysis {
         }
         return tempNode;
     }
+
 
     private TokenTree add_op(){
         // 保存要返回的结点

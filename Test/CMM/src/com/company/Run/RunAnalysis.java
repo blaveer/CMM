@@ -444,6 +444,9 @@ public class RunAnalysis {
         if(temp.getContent().equals("&&")||temp.getContent().equals("||")){
             return log_arithmetic(String.valueOf(run_bool_result(temp.get(0))),String.valueOf(run_bool_result(temp.get(1))),temp.getContent());
         }
+        else if(temp.getContent().equals("!")){
+            return log_inverter_arithmetic(String.valueOf(run_bool_result(temp.get(0))));
+        }
         else if(is_compare(temp.getContent())){
             return com_arithmetic(String.valueOf(run_real_result(temp.get(0))),String.valueOf(run_real_result(temp.get(1))),temp.getContent());
         }
@@ -516,6 +519,11 @@ public class RunAnalysis {
         else {
             return false;
         }
+    }
+
+    private boolean log_inverter_arithmetic(String log){
+        boolean log_inverter=Boolean.parseBoolean(log);
+        return !log_inverter;
     }
 
     private boolean log_arithmetic(String log1,String log2,String op){

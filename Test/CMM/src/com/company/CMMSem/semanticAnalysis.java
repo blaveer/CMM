@@ -462,7 +462,11 @@ public class semanticAnalysis {
         if(isLogic(express_bool)){
             if(express_bool.getContent().equals("&&")||express_bool.getContent().equals("||")){
                 return (express_type_check(express_bool.get(0),"bool")&&express_type_check(express_bool.get(1),"bool"));
-            }else{
+            }
+            else if(express_bool.getContent().equals("!")){
+                return express_type_check(express_bool.get(0),"bool");
+            }
+            else{
                 return (express_type_check(express_bool.get(0),"real")&&express_type_check(express_bool.get(1),"real"));
             }
         }
