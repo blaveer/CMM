@@ -430,7 +430,7 @@ public class myFrame extends JFrame {
             gra_out.setText(graAnalysis.getTree());
             out_panel.setSelectedIndex(1);
             semanticAnalysis=new semanticAnalysis(graAnalysis.getRoot());
-            semanticAnalysis.semantic(graAnalysis.getRoot());
+            //semanticAnalysis.semantic(graAnalysis.getRoot());
             if(semanticAnalysis.getErrorNum()==0){
                 problemArea.append("语法分析没问题");
                 graAnalysis.outToken();

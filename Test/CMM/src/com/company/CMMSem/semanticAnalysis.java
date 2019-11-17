@@ -1,6 +1,7 @@
 package com.company.CMMSem;
 
 
+import com.company.Tools.ID.ID;
 import com.company.Tools.ID.IDBase;
 import com.company.Tools.TokenTree;
 
@@ -10,6 +11,7 @@ import java.util.ArrayList;
  * 关于建立这个类的原因，本来是想在上个类中直接实现检查内容和执行的效果，
  * 后来发现难度过大，所以就在这单独的先进行一个语义分析
  * 其实挺后悔在语法分析的时候没有将TokenTree的位置传过来
+ * return语句不支持在if_while_for中写
  * */
 public class semanticAnalysis {
     private TokenTree root;/**用来继承其根节点*/
@@ -17,12 +19,58 @@ public class semanticAnalysis {
     //private ArrayList<ID> idArrayList=new ArrayList<>();/**可以说这两个变量相辅相成，上面那个是用来监测是否有重复的标识符或者未声明巴拉巴拉，这个是用来记录每一个合法的标识符的*/
     private ArrayList<Integer> counter_id=new ArrayList<>();/**这个变量是记录在每个模块中增加的标识符的的数量的,为了能够实现变量的作用域，自己挖的坑，自己填吧*/
     private int errorNum=0;
+    private int global_v=0;
     private String errorInfo="";
     private String log="";
+    //private boolean can_b_c=false;
     public semanticAnalysis(TokenTree root){
         this.root=root;
+        add_global_v(root);
+        global_v=ids.size();
     }
-    public void semantic(TokenTree tempRoot){
+
+    public void semantic(TokenTree tempRoot,int ia){
+        TokenTree temp=null;
+        for(int i=0;i<tempRoot.getChildSize();i++){
+            temp=tempRoot.get(i);
+            if(temp.getKind().equals("关键字")){
+                /**这些是声明的全局变量，在初始话的时候已经检查过*/
+                continue;
+            }
+            else if(temp.getKind().equals("标识符")){
+                fun_sem(temp);
+            }
+            else{
+
+            }
+        }
+    }
+
+    private void fun_sem(TokenTree tempRoot){
+        int start=ids.size();
+        String kind=tempRoot.get(0).getContent();//函数的返回值类型
+        TokenTree par_list=tempRoot.get(1);
+        IDBase id_temp=findIDByName(tempRoot.getContent());
+        for(int i=0;i<par_list.getChildSize();i++){
+            TokenTree par_one=par_list.get(i);
+            String par_kind=par_one.getContent();
+            String par_id=par_one.get(0).getContent();
+            if(isExist(par_id)){
+                addError("关于函数的参数"+par_id+"已经被声明为全局变量");
+                continue;
+            }
+            /**在这是一个一个的将函数的参数存进去，所以出现当上面的函数调用下面的函数时候，会报错，因为此时下面的函数的参数还为0**/
+            id_temp.addFun_par(new IDBase(par_kind,par_id,1));/**关于这个1是随便写的，只是不想再写一个构造函数了*/
+            ids.add(new IDBase(par_kind,par_id,1,true));//同时将这些变量加入到总的变量表中去
+        }
+        TokenTree fun_main=tempRoot.get(2);
+        new_semantic(fun_main,kind);
+        int end=ids.size();
+        int counter=end-start;
+        removeID(start,counter);
+    }
+
+    private void new_semantic(TokenTree tempRoot,String kind){
         TokenTree temp=null;
         int counter_id_start=ids.size();
         int counter_id_end=ids.size();
@@ -50,8 +98,75 @@ public class semanticAnalysis {
             else if(temp.getKind().equals("关键字")&&temp.getContent().equals("if")){
                 if_sem(temp);
             }
-            else if(temp.getContent().equals("break")||temp.getContent().equals("continue")){
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("call")){
+                fun_call(temp,null);
+            }
+            else if(temp.getContent().equals("return")){
+                if(!express_type_check(temp.get(0),kind)){
+                    addError("函数返回值类型不匹配,不是"+kind);
+                }
                 return;
+            }
+            else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
+                System.out.println("语义分析结束");
+                break;
+            }
+            else{
+                addError("出现了不该出现的关键字");
+                System.out.println("出现了不该出现的关键字");
+            }
+        }
+        counter_id_end=ids.size();
+        int add_num=counter_id_end-counter_id_start;
+        if(add_num>0){
+            removeID(counter_id_start,add_num);
+        }else if(add_num==0){
+            addLog("本次没有添加新的变量");
+        }
+        else{
+            addLog("卧槽，跟胡扯一样");
+        }
+
+    }
+
+    public void semantic(TokenTree tempRoot,boolean can_b_c){
+        TokenTree temp=null;
+        int counter_id_start=ids.size();
+        int counter_id_end=ids.size();
+        for(int i=0;i<tempRoot.getChildSize();i++){
+            //counter_id=0;
+            temp=tempRoot.get(i);
+            if(temp.getKind().equals("关键字")&&temp.getContent().equals("declare")){
+                declare_sem(temp);
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("read")){
+                read_sem(temp);
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("write")){
+                write_sem(temp);
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("assign")){
+                assign_sem(temp);
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("while")){
+                while_sem(temp);
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("for")){
+                for_sem(temp);
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("if")){
+                if_sem(temp);
+            }
+            else if(temp.getContent().equals("break")||temp.getContent().equals("continue")) {
+                if (can_b_c) {
+                    return;
+                }
+                else{
+                    addError("这里不该有break或者continue");
+                }
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("call")){
+                fun_call(temp,null);
             }
             else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
                 System.out.println("语义分析结束");
@@ -74,11 +189,65 @@ public class semanticAnalysis {
         }
     }
 
+    private void add_global_v(TokenTree root){
+        for(int i=0;i<root.getChildSize();i++){
+            TokenTree temp=root.get(i);
+            if(temp.getContent().equals("declare")){
+                declare_sem(temp);
+            }
+            else if(temp.getKind().equals("标识符")){
+                String name=temp.getContent();
+                if(isExist(name)){
+                    addError("标识符"+name+"已经存在");
+                    continue;
+                }
+                String kind=temp.get(0).getContent();
+                ids.add(new IDBase(kind,name,true));
+            }
+            else if(temp.getKind().equals("finish")){
+
+            }
+            else{
+                addError("语法分析还是有问题");
+            }
+        }
+    }
+
+    private void fun_call(TokenTree tempRoot,String kind){
+        String name=tempRoot.get(0).getContent();
+        IDBase id_temp=findIDByName(name);
+        if(id_temp==null){
+            addError("调用了并不存在的函数"+name);
+            return;
+        }
+        int goal_par_num=id_temp.getFun_par().size();
+        int real_par_num=tempRoot.getChildSize()-1;/**建一是因为第一个子节点是调用的函数的名字*/
+        if(goal_par_num!=real_par_num){
+            addError("关于函数"+name+"的调用参数数量不符");
+            return;
+        }
+        for(int i=0;i<goal_par_num;i++){
+            TokenTree temp_express=tempRoot.get(i+1);
+            if(!express_type_check(temp_express,id_temp.getFun_par().get(i).getKind())){
+                addError("关于函数"+name+"的调用第"+(i+1)+"个参数数据类型不兼容");
+            }
+        }
+        if(kind!=null){
+            if(!typeCompatibility(kind,id_temp.getKind())){
+                addError("在调用函数"+id_temp.getName()+"时候类型不兼容");
+            }
+        }
+    }
+
     private void read_sem(TokenTree temp){
         TokenTree temp_read=temp.get(0);
         if(temp_read.getKind().equals("标识符")){
             if(isExist(temp_read.getContent())){
                 IDBase id=findIDByName(temp_read.getContent());
+                if(id.getIsFun()){
+                    addError("该标识符被标识为函数了");
+                    return;
+                }
                 if(temp_read.hasChildren()){
                     if(!id.getIsInit()){
                         addError("数组"+temp_read.getContent()+"还未整体初始化");
@@ -134,9 +303,9 @@ public class semanticAnalysis {
             else_main=temp.get(2);
         }
         check_sem(if_check.get(0));
-        semantic(if_main);
+        semantic(if_main,true);
         if(else_main!=null){
-            semantic(else_main);
+            semantic(else_main,true);
         }
     }
 
@@ -148,7 +317,7 @@ public class semanticAnalysis {
         assign_sem(init_front.get(0));
         check_sem(check.get(0));
         assign_sem(init_back.get(0));
-        semantic(for_main);
+        semantic(for_main,true);
 
     }
 
@@ -157,7 +326,7 @@ public class semanticAnalysis {
         TokenTree while_check=temp.get(0);
         TokenTree while_main=temp.get(1);
         check_sem(while_check.get(0));
-        semantic(while_main);
+        semantic(while_main,true);
     }
 
     private void assign_sem(TokenTree temp){
@@ -174,7 +343,8 @@ public class semanticAnalysis {
             return;
         }
         /**对数组的某一项赋值*/
-        if(id_assign.hasChildren()){//TODO 数组是由先整体赋过值之后，才能个别再赋值
+        if(id_assign.hasChildren()){
+            //TODO 数组是由先整体赋过值之后，才能个别再赋值
             //TODO 数组应当先整体赋值
             IDBase id_temp_assign=findIDByName(id_assign.getContent());
             if(!id_temp_assign.getIsArr()){
@@ -195,6 +365,7 @@ public class semanticAnalysis {
                 findIDByName(id_assign.getContent()).setIsInit(true);
             }
             else if(id_assign_array_length.getKind().equals("标识符")){
+                /**这里应该用那个函数的*/
                 if(isExist(id_assign_array_length.getContent())){
                     IDBase temp_id=findIDByName(id_assign_array_length.getContent());
                     String kind_temp_id=temp_id.getKind();
@@ -213,6 +384,12 @@ public class semanticAnalysis {
                     addError("使用了未声明的标识符"+id_assign_array_length.getContent());
                 }
             }
+            else if(id_assign_array_length.getContent().equals("call")&&id_assign_array_length.getKind().equals("关键字")){
+                IDBase id_temp=findIDByName(id_assign_array_length.get(0).getContent());
+                if(!id_temp.getKind().equals("int")){
+                    addError("使用了返回值不是int的函数"+id_assign_array_length.get(0).getContent()+"作为数组下标");
+                }
+            }
             TokenTree id_assign_array_one_init=assign.get(1);//这个是等号后面的
             if(id_assign_array_one_init.getKind().equals("标识符")){
                 //if(useID(id_assign_array_one_init.getContent(),kind)){ TODO
@@ -229,6 +406,12 @@ public class semanticAnalysis {
                 }
                 else{
                     addError("使用了不合理的算术表达式来初始化"+kind+"类型的数组");
+                }
+            }
+            else if(id_assign_array_one_init.getContent().equals("call")&&id_assign_array_one_init.getKind().equals("关键字")){
+                IDBase id_temp=findIDByName(id_assign_array_one_init.get(0).getContent());
+                if(!id_temp.getKind().equals(kind)){
+                    addError("使用了返回值不符合的函数"+id_assign_array_one_init.get(0).getContent()+"作为赋值");
                 }
             }
             else if(typeCompatibility(kind,id_assign_array_one_init.getKind())){
@@ -278,6 +461,10 @@ public class semanticAnalysis {
                             addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
                         }
                     }
+                    else if(id_init.getKind().equals("关键字")&&id_init.getContent().equals("call")){
+                        fun_call(id_init,id_temp.getKind());
+                        System.out.println("kjnknkbnkj");
+                    }
                     else if(typeCompatibility(kind,id_init.getKind())){
                         findIDByName(id_assign.getContent()).setIsInit(true);
                     }
@@ -297,6 +484,10 @@ public class semanticAnalysis {
             /**声明加初始化*/
             if(one_declare.getKind().equals("运算符")&&one_declare.getContent().equals("=")){
                 TokenTree one_id=one_declare.get(0);/**这个变量代表的是声明的标识符*/
+                if(one_id.getContent().equals("main")){
+                    addError("变量不能声明未main");
+                    continue;
+                }
                 if(isExist(one_id.getContent())){
                     addError("在声明的标识符"+one_id.getContent()+"已经存在");
                     continue;
@@ -333,6 +524,9 @@ public class semanticAnalysis {
                             addError("关于"+one_id.getContent()+"的初始化类型不兼容");
                         }
                     }
+                    else if(one_init.getContent().equals("call")){
+                        fun_call(one_init,kind);
+                    }
                     else if(one_init.getKind().equals("标识符")){
                         //if(useID(one_init.getContent(),kind)){ //TODO
                         if(useID(one_init,kind)){
@@ -353,6 +547,10 @@ public class semanticAnalysis {
                 }
             }/**只声明了*/
             else if(one_declare.getKind().equals("标识符")){
+                if(one_declare.getContent().equals("main")){
+                    addError("变量不能声明为main");
+                    continue;
+                }
                 if(isExist(one_declare.getContent())){
                     addError("要声明的标识符"+one_declare.getContent()+"已经存在");
                     continue;
@@ -440,8 +638,17 @@ public class semanticAnalysis {
                 return type_bool_check(express);
             case "string":
                 return type_string_check(express);
+            case "void":
+                return type_void_check(express);
             default:return false;
         }
+    }
+
+    private boolean type_void_check(TokenTree express_void){
+        if(express_void.getContent().equals("void")){
+            return true;
+        }
+        return false;
     }
 
     private boolean type_string_check(TokenTree express_string){
@@ -565,6 +772,7 @@ public class semanticAnalysis {
         }
         //TODO 待做
     }
+
 
     private boolean isLogic(TokenTree op){
         if(op.getKind().equals("运算符")&&(!isArithmetic(op))){
@@ -727,6 +935,7 @@ public class semanticAnalysis {
     }
 
     private boolean isExist(String id_name){
+        int m=0;
         for(int counter=0;counter<ids.size();counter++){
             if(ids.get(counter).getName().equals(id_name)){
                 return true;

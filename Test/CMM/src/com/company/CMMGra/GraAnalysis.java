@@ -7,6 +7,13 @@ import sun.nio.cs.ext.ISCII91;
 import java.util.ArrayList;
 
 import static com.company.Tools.ReservedWord.*;
+/**
+ * 在这记录一下添加 函数功能的时候改变的代码
+ * 首先就是新增两个函数function_stm，function_call_stm
+ * 在statement中改变了调用函数的情况，在factor函数中添加了标识符是函数的情况
+ *
+ * 在具体使用这种新的带有函数的语法分析中，先是重载了一个gra函数作为调试
+ * */
 
 public class GraAnalysis {
     // 错误个数
@@ -21,6 +28,7 @@ public class GraAnalysis {
     //语法分析的根节点
     private TokenTree Program=new TokenTree("关键字","root");
 
+    private boolean is_function=false;
 
     //用来遍历词法分析得到的Token。
     private int counter=0;
@@ -42,6 +50,18 @@ public class GraAnalysis {
             Program.children.add(statement());
         }
     }
+    public void gra(boolean is_new){
+        try {
+            counter=0;
+            currentToken=tokens.get(counter);
+            for(;counter<tokens.size();){
+                Program.children.add(function_stm());
+            }
+        }catch (Exception ex){
+            System.out.println("代码写的太混乱了，语法分析都崩了");
+        }
+        OutOfMemoryError s;
+    }
 
     private TokenTree function_stm(){
         TokenTree temp=null;
@@ -50,12 +70,103 @@ public class GraAnalysis {
                                     ||currentToken.getContent().equals("real")
                                     ||currentToken.getContent().equals("bool")
                                     ||currentToken.getContent().equals("string"))){
+            //System.out.println(currentToken.getKind());
             TokenTree return_type=new TokenTree("返回值",currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
             if(currentToken!=null&&currentToken.getKind().equals("标识符")) {
-
+                counter++;
+                currentToken=tokens.get(counter);
+                if(currentToken.getContent().equals("=")||currentToken.getContent().equals("[")||currentToken.getContent().equals(";")){
+                    counter--;
+                    counter--;
+                    currentToken=tokens.get(counter);
+                    if(is_function){
+                        addError(currentToken.getLine(),currentToken.getCulomn(),"请将全部变量的声明放置最前面");
+                    }
+                    return declare_stm();
+                }
+                is_function=true;
+                counter--;
+                currentToken=tokens.get(counter);
+                temp=new TokenTree("标识符",currentToken.getContent());
+                temp.children.add(return_type);
+                counter++;
+                currentToken=tokens.get(counter);
+                if(currentToken!=null&&currentToken.getContent().equals("(")){
+                    counter++;
+                    currentToken=tokens.get(counter);
+                }else{
+                    addError(currentToken.getLine(),currentToken.getCulomn(),"缺少左小括号");
+                }
+                TokenTree parameter=new TokenTree("关键字","参数列表");
+                while(true){
+                    TokenTree one_parameter=null;
+                    if(currentToken!=null&&(currentToken.getContent().equals("int")
+                            ||currentToken.getContent().equals("real")
+                            ||currentToken.getContent().equals("bool")
+                            ||currentToken.getContent().equals("string"))){
+                        one_parameter=new TokenTree("关键字",currentToken.getContent());
+                        counter++;
+                        currentToken=tokens.get(counter);
+                        if(currentToken!=null&&currentToken.getKind().equals("标识符")){
+                            one_parameter.children.add(new TokenTree("标识符",currentToken.getContent()));
+                            counter++;
+                            currentToken=tokens.get(counter);
+                            parameter.children.add(one_parameter);
+                            if(currentToken!=null&&currentToken.getContent().equals(",")){
+                                counter++;
+                                currentToken=tokens.get(counter);
+                                continue;
+                            }
+                            else if(currentToken!=null&&currentToken.getContent().equals(")")){
+                                counter++;
+                                currentToken=tokens.get(counter);
+                                break;
+                            }
+                            else{
+                                parameter=new TokenTree("错误","以错误的Token开始");
+                                addError(currentToken.getLine(),currentToken.getCulomn(),"函数参数列表错误");
+                                break;
+                            }
+                        }
+                        else{
+                            parameter=new TokenTree("错误","以错误的Token开始");
+                            addError(currentToken.getLine(),currentToken.getCulomn(),"函数参数列表错误");
+                            break;
+                        }
+                    }
+                    else if(currentToken.getContent().equals(")")){
+                        counter++;
+                        currentToken=tokens.get(counter);
+                        break;
+                    }
+                    else{
+                        parameter=new TokenTree("错误","以错误的Token开始");
+                        addError(currentToken.getLine(),currentToken.getCulomn(),"函数参数列表错误");
+                        break;
+                    }
+                }
+                temp.children.add(parameter);
+                if(currentToken!=null&&currentToken.getContent().equals("{")){
+                    counter++;
+                    currentToken=tokens.get(counter);
+                }
+                else{
+                    addError(currentToken.getLine(),currentToken.getCulomn(),"缺乏左大括号");
+                }
+                TokenTree func_main=new TokenTree("关键字","main");
+                while(!currentToken.getContent().equals("}")){
+                    func_main.children.add(statement());
+                }
+                temp.children.add(func_main);
+                counter++;
+                currentToken=tokens.get(counter);
             }
+        }
+        else if(currentToken.getLine()==0){
+            counter++;
+            temp=new TokenTree("finish","finish");
         }
         else if(currentToken!=null&&currentToken.getContent().equals("finish")){
             counter++;
@@ -82,7 +193,19 @@ public class GraAnalysis {
         TokenTree state=null;
         //currentToken=tokens.get(counter);
         if(currentToken.getKind()=="标识符"){
-            state=assign_stm(false);
+            String function_name=currentToken.getContent();
+            counter++;
+            currentToken=tokens.get(counter);
+            if(currentToken.getContent().equals("(")){
+                counter++;
+                currentToken=tokens.get(counter);
+                state=function_call_stm(function_name,true);
+            }
+            else{
+                counter--;
+                currentToken=tokens.get(counter);
+                state=assign_stm(false);
+            }
         }
         else if(currentToken!=null&&(currentToken.getContent().equals("int")||currentToken.getContent().equals("string")||currentToken.getContent().equals("real")||currentToken.getContent().equals("bool"))){
             state=declare_stm();
@@ -118,6 +241,9 @@ public class GraAnalysis {
             }
 
         }
+        else if(currentToken!=null&&currentToken.getContent().equals("return")){
+            state=return_stm();
+        }
         else if(currentToken.getLine()==0){
             counter++;
             state=new TokenTree("finish","finish");
@@ -129,6 +255,64 @@ public class GraAnalysis {
             state=new TokenTree("错误","以错误的Token开始");
         }
         return state;
+    }
+
+    /**在这里解释一下is_state的含义，这个变量是为了标识是单独使用的这个函数，函数在赋值语句中拉或者是表达式中**/
+    private TokenTree function_call_stm(String function_name,boolean is_state){
+        /**到这已经指向第一个参数，或者是无参情况下是）*/
+        TokenTree fun_call=new TokenTree("关键字","call");
+        fun_call.children.add(new TokenTree("标识符",function_name));
+        while(!currentToken.getContent().equals(")")){
+            fun_call.children.add(express_stm());
+            if(currentToken.getContent().equals(",")){
+                counter++;
+                currentToken=tokens.get(counter);
+                continue;
+            }
+            else if(currentToken.getContent().equals(")")){
+//                counter++;
+//                currentToken=tokens.get(counter);
+                break;
+            }
+            else{
+                addError(currentToken.getLine(),currentToken.getCulomn(),"错误的token");
+            }
+        }
+        counter++;
+        currentToken=tokens.get(counter);
+        if(!is_state){
+
+            return fun_call;
+        }
+        if(currentToken.getContent().equals(";")){
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else{
+            addError(currentToken.getLine(),currentToken.getCulomn(),"缺少分号");
+        }
+        return fun_call;
+    }
+
+    private TokenTree return_stm(){
+        TokenTree return_stm=new TokenTree("关键字","return");
+        counter++;
+        currentToken=tokens.get(counter);
+        if(currentToken.getContent().equals(";")){
+            return_stm.children.add(new TokenTree("关键字","void"));
+            counter++;
+            currentToken=tokens.get(counter);
+            return return_stm;
+        }
+        return_stm.children.add(express_stm());
+        if(currentToken.getContent().equals(";")){
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else{
+            addError(currentToken.getLine(),currentToken.getCulomn(),"缺少分号");
+        }
+        return return_stm;
     }
 
     private TokenTree read_stm(){
@@ -490,6 +674,7 @@ public class GraAnalysis {
                         currentToken=tokens.get(counter);
                         continue;
                     }
+
                     else{
                         addError(currentToken.getLine(),currentToken.getCulomn(),"缺少；");
                         break;
@@ -506,6 +691,11 @@ public class GraAnalysis {
                     counter++;
                     currentToken = tokens.get(counter);
                     continue;
+                }
+                else if(currentToken.getContent().equals("(")){
+                    addError(currentToken.getLine(),currentToken.getCulomn(),"函数中不能声明函数");
+                    counter-=2;
+                    function_stm();
                 }
                 else {
                     addError(currentToken.getLine(), currentToken.getCulomn(), "错误的token，缺少；");
@@ -707,6 +897,7 @@ public class GraAnalysis {
         }
         else if (currentToken != null && currentToken.getKind().equals("标识符")) {
             TokenTree tempNode_ID=new TokenTree("标识符", currentToken.getContent());
+            String fun_name=currentToken.getContent();
             //tempNode = new TokenTree("标识符", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
@@ -723,6 +914,19 @@ public class GraAnalysis {
                 }else{
                     addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右中括号");
                 }
+            }
+            else if(currentToken!=null&&currentToken.getContent().equals("(")){
+                counter++;
+                currentToken=tokens.get(counter);
+                tempNode=function_call_stm(fun_name,false);
+//                if(currentToken.getContent().equals(")")){
+//                    counter++;
+//                    currentToken=tokens.get(counter);
+//                }
+//                else{
+//                    addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右小括号");
+//                }
+                return tempNode;
             }
             tempNode=tempNode_ID;
             //endregion

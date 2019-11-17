@@ -124,7 +124,7 @@ public class LexAnalysis {
                 }else if(ch==')'){
                     //displayTokens.add(new Token(line,index+1,"RLB","）"));
                     displayTokens.add(new Token(line,index+1,"RLB",")"));
-                    tokens.add(new Token(line,index+1,"RLB","）"));
+                    tokens.add(new Token(line,index+1,"RLB",")"));
                     index++;
                     ch= lineText.charAt(index);
                 }else if(ch=='['){
@@ -491,7 +491,9 @@ public class LexAnalysis {
                 || str.equals(ReservedWord.REAL) || str.equals(ReservedWord.BOOL)
                 || str.equals(ReservedWord.STRING) || str.equals(ReservedWord.TRUE)
                 || str.equals(ReservedWord.FALSE) || str.equals(ReservedWord.FOR)
-                ||str.equals(ReservedWord.BREAK)||str.equals(ReservedWord.CONTINUE))
+                ||str.equals(ReservedWord.BREAK)||str.equals(ReservedWord.CONTINUE)
+                ||str.equals(ReservedWord.VOID)||str.equals(ReservedWord.RETURN))
+
                // ||str.equals(ReservedWord.CHAR))
             return true;
         return false;

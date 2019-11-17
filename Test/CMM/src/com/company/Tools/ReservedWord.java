@@ -26,6 +26,8 @@ public class ReservedWord {
     public static final String CONTINUE="continue";
     public static final String CHAR="char";
     public static final String MAIN="main";
+    public static final String VOID="void";
+    public static final String RETURN="return";
     public static final String DQ = "\"";    // TODO 待删除
     public static final String RBRACE = "}";
     public static final String LBRACE = "{";
