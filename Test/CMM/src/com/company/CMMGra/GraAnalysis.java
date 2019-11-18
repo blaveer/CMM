@@ -412,11 +412,167 @@ public class GraAnalysis {
             if_main.children.add(statement());
         }
         if_token.children.add(if_main);
+
         if(currentToken.getContent().equals("else")){
             hasElse=true;
             counter++;
             currentToken=tokens.get(counter);
         }
+
+
+        if(hasElse){
+            while(true){
+                if(currentToken.getContent().equals("if")){
+                    TokenTree else_if_token=new TokenTree("关键字","else_if");
+                    counter++;
+                    currentToken=tokens.get(counter);
+                    if(currentToken.getContent().equals("(")){
+                        counter++;
+                        currentToken=tokens.get(counter);
+                    } else{
+                        addError(currentToken.getLine(),currentToken.getCulomn(),"缺少做小括号");
+                    }
+                    TokenTree check_else=new TokenTree("关键字","check");
+                    check_else.children.add(express_stm());
+                    else_if_token.children.add(check_else);
+                    if(currentToken.getContent().equals(")")){
+                        counter++;
+                        currentToken=tokens.get(counter);
+                    } else{
+                        addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右小括号");
+                    }
+                    boolean has_B=false;
+                    TokenTree else_if_main=new TokenTree("关键字","else_if_main");
+                    if(currentToken.getContent().equals("{")){
+                        has_B=true;
+                        counter++;
+                        currentToken=tokens.get(counter);
+                    }
+                    if(has_B){
+                        while(!currentToken.getKind().equals("RBB")){
+                            else_if_main.children.add(statement());
+                        }
+                        counter++;
+                        currentToken=tokens.get(counter);
+                    }
+                    else{
+                        else_if_main.children.add(statement());
+                    }
+                    else_if_token.children.add(else_if_main);
+                    if_token.children.add(else_if_token);
+//                    counter++;
+//                    currentToken=tokens.get(counter);
+                    if(currentToken.getContent().equals("else")){
+                        counter++;
+                        currentToken=tokens.get(counter);
+                        continue;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                else{
+                    TokenTree else_token=new TokenTree("关键字","else");
+                    boolean has_else_B=false;
+                    if(currentToken.getKind().equals("LBB")){
+                        has_else_B=true;
+                        counter++;
+                        currentToken=tokens.get(counter);
+                    }
+                    if(has_else_B){
+                        while(!currentToken.getKind().equals("RBB")){
+                            else_token.children.add(statement());
+                        }
+                        counter++;
+                        currentToken=tokens.get(counter);
+                        if_token.children.add(else_token);
+                    }
+                    else{
+                        else_token.children.add(statement());
+//                        counter++;
+//                        currentToken=tokens.get(counter);
+                        if_token.children.add(else_token);
+                    }
+                    return if_token;
+                }
+            }
+
+//            TokenTree else_token=new TokenTree("关键字","else");
+//            if(currentToken.getKind().equals("LBB")){
+//                hasElseBB=true;
+//                counter++;
+//                currentToken=tokens.get(counter);
+//            }
+//            if(hasElseBB){
+//                while(!currentToken.getKind().equals("RBB")){
+//                    else_token.children.add(statement());
+//                }
+//                counter++;
+//                currentToken=tokens.get(counter);
+//                if_token.children.add(else_token);
+//            }
+//            else{
+//                else_token.children.add(statement());
+//                counter++;
+//                currentToken=tokens.get(counter);
+//                if_token.children.add(else_token);
+//            }
+            //return if_token;
+        }
+        else{
+            return if_token;
+        }
+        return if_token;
+    }
+
+
+    private TokenTree if_stm_2(){
+        TokenTree if_token=new TokenTree("关键字","if");
+        counter++;
+        currentToken=tokens.get(counter);
+        boolean hasBB=false;
+        boolean hasElse=false;
+        boolean hasElseBB=false;
+        if(currentToken.getKind().equals("LLB")){
+            counter++;
+            currentToken=tokens.get(counter);
+        }else{
+            addError(currentToken.getLine(),currentToken.getCulomn(),"缺少左小括号（");
+        }
+        TokenTree if_check=new TokenTree("关键字","check");
+        if_check.children.add(express_stm());/**这里刚改过1113*/
+        if_token.children.add(if_check);
+        if(currentToken.getKind().equals("RLB")){
+            counter++;
+            currentToken=tokens.get(counter);
+        }else{
+            addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右小括号）");
+        }
+        if(currentToken.getKind().equals("LBB")){
+            hasBB=true;
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        TokenTree if_main=new TokenTree("关键字","if_main");
+        if(hasBB){
+            while(!currentToken.getKind().equals("RBB")){
+                if_main.children.add(statement());
+            }
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+        else{
+            if_main.children.add(statement());
+        }
+        if_token.children.add(if_main);
+
+        if(currentToken.getContent().equals("else")){
+            hasElse=true;
+            counter++;
+            currentToken=tokens.get(counter);
+        }
+
+
         if(hasElse){
             TokenTree else_token=new TokenTree("关键字","else");
             if(currentToken.getKind().equals("LBB")){

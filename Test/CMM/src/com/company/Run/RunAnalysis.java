@@ -25,12 +25,15 @@ public class RunAnalysis {
     }
 
     public boolean run(){
-        if(runEvery(root)){
-            return true;
+        TokenTree runRoot=null;
+        for(int i=0;i<root.getChildSize();i++){
+            runRoot=root.get(i);
+            if(runRoot.getContent().equals("main")&&runRoot.getKind().equals("标识符")){
+                return runEvery(runRoot.get(2));
+            }
         }
-        else{
-            return false;
-        }
+        addError("没有main函数");
+        return false;
     }
 
     private boolean runEvery(TokenTree tempRoot){
@@ -39,7 +42,10 @@ public class RunAnalysis {
         TokenTree temp=null;
         for(int counter=0;counter<tempRoot.getChildSize();counter++){
             temp=tempRoot.get(counter);
-            if(temp.getKind().equals("关键字")&&temp.getContent().equals("declare")){
+            if(temp.getContent().equals("return")){
+                return true;
+            }
+            else if(temp.getKind().equals("关键字")&&temp.getContent().equals("declare")){
                 if(!declare_run(temp)){
                     return false;
                 }
@@ -103,6 +109,10 @@ public class RunAnalysis {
         int counter=end-start;
         remove(start,counter);
         return true;
+    }
+
+    private String fun_call(TokenTree tempRoot){
+        return "";
     }
 
     private boolean write_run(TokenTree temp_write){
@@ -253,16 +263,29 @@ public class RunAnalysis {
         TokenTree if_check=temp.get(0);
         TokenTree if_main=temp.get(1);
         TokenTree else_main=null;
-        if(temp.getChildSize()>2){
-            else_main=temp.get(2);
-        }
+//        if(temp.getChildSize()>2){
+//            else_main=temp.get(2);
+//        }
         boolean is_if=run_bool_result(if_check.get(0));
         if(is_if){
             return runEvery(if_main);
         }else{
-            if(else_main!=null){
-                return runEvery(else_main);
+            for(int i=2;i<temp.getChildSize();i++) {
+                else_main=temp.get(i);
+                if(else_main.get(0).getContent().equals("check")){
+                    boolean is_else_if=run_bool_result(else_main.get(0).get(0));
+                    if(is_else_if){
+                        boolean fds= runEvery(else_main.get(1));
+                        return fds;
+                    }
+                }
+                else{
+                    return runEvery(else_main);
+                }
             }
+//            if(else_main!=null){
+//                return runEvery(else_main);
+//            }
         }
         return true;
     }

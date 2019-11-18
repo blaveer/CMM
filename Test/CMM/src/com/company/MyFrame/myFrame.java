@@ -420,7 +420,7 @@ public class myFrame extends JFrame {
             return;
         }
         graAnalysis=new GraAnalysis(lexAnalysis.getTokens());
-        graAnalysis.gra();
+        graAnalysis.gra(true);
         problemArea.append("\n");
         problemArea.append("**********语法分析结果**********\n");
         if(graAnalysis.getErrorNum()!=0){
@@ -430,7 +430,7 @@ public class myFrame extends JFrame {
             gra_out.setText(graAnalysis.getTree());
             out_panel.setSelectedIndex(1);
             semanticAnalysis=new semanticAnalysis(graAnalysis.getRoot());
-            //semanticAnalysis.semantic(graAnalysis.getRoot());
+            semanticAnalysis.semantic(graAnalysis.getRoot(),1);
             if(semanticAnalysis.getErrorNum()==0){
                 problemArea.append("语法分析没问题");
                 graAnalysis.outToken();

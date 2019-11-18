@@ -22,7 +22,7 @@ public class semanticAnalysis {
     private int global_v=0;
     private String errorInfo="";
     private String log="";
-    //private boolean can_b_c=false;
+    private boolean is_return=false;
     public semanticAnalysis(TokenTree root){
         this.root=root;
         add_global_v(root);
@@ -35,6 +35,7 @@ public class semanticAnalysis {
             temp=tempRoot.get(i);
             if(temp.getKind().equals("关键字")){
                 /**这些是声明的全局变量，在初始话的时候已经检查过*/
+
                 continue;
             }
             else if(temp.getKind().equals("标识符")){
@@ -64,7 +65,14 @@ public class semanticAnalysis {
             ids.add(new IDBase(par_kind,par_id,1,true));//同时将这些变量加入到总的变量表中去
         }
         TokenTree fun_main=tempRoot.get(2);
+        is_return=false;
         new_semantic(fun_main,kind);
+        if(is_return){
+            is_return=false;
+        }
+        else {
+            addError("函数缺少返回值");
+        }
         int end=ids.size();
         int counter=end-start;
         removeID(start,counter);
@@ -105,6 +113,7 @@ public class semanticAnalysis {
                 if(!express_type_check(temp.get(0),kind)){
                     addError("函数返回值类型不匹配,不是"+kind);
                 }
+                is_return=true;
                 return;
             }
             else if(temp.getKind().equals("finish")&&temp.getContent().equals("finish")){
@@ -126,7 +135,6 @@ public class semanticAnalysis {
         else{
             addLog("卧槽，跟胡扯一样");
         }
-
     }
 
     public void semantic(TokenTree tempRoot,boolean can_b_c){
@@ -298,15 +306,30 @@ public class semanticAnalysis {
     private void if_sem(TokenTree temp){
         TokenTree if_check=temp.get(0);
         TokenTree if_main=temp.get(1);
-        TokenTree else_main=null;
-        if(temp.getChildSize()>2){
-            else_main=temp.get(2);
-        }
         check_sem(if_check.get(0));
         semantic(if_main,true);
-        if(else_main!=null){
-            semantic(else_main,true);
+        TokenTree else_main=null;
+        for(int i=2;i<temp.getChildSize();i++){
+            else_main=temp.get(i);
+            if(else_main.get(0).getContent().equals("check")){
+                TokenTree else_if_check=else_main.get(0);
+                check_sem(else_if_check.get(0));
+                TokenTree else_if_main=else_main.get(1);
+                semantic(else_if_main,true);
+            }
+            else{
+                semantic(else_main,true);
+            }
         }
+
+//        if(temp.getChildSize()>2){
+//            else_main=temp.get(2);
+//        }
+//
+//
+//        if(else_main!=null){
+//            semantic(else_main,true);
+//        }
     }
 
     private void for_sem(TokenTree temp){
