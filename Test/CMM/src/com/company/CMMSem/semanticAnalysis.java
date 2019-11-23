@@ -1,6 +1,7 @@
 package com.company.CMMSem;
 
 
+import com.company.Tools.ID.Dim;
 import com.company.Tools.ID.ID;
 import com.company.Tools.ID.IDBase;
 import com.company.Tools.TokenTree;
@@ -50,7 +51,7 @@ public class semanticAnalysis {
     private void fun_sem(TokenTree tempRoot){
         int start=ids.size();
         String kind=tempRoot.get(0).getContent();//函数的返回值类型
-        TokenTree par_list=tempRoot.get(1);
+        TokenTree par_list=tempRoot.get(1);//参数列表
         IDBase id_temp=findIDByName(tempRoot.getContent());
         for(int i=0;i<par_list.getChildSize();i++){
             TokenTree par_one=par_list.get(i);
@@ -61,10 +62,10 @@ public class semanticAnalysis {
                 continue;
             }
             /**在这是一个一个的将函数的参数存进去，所以出现当上面的函数调用下面的函数时候，会报错，因为此时下面的函数的参数还为0**/
-            id_temp.addFun_par(new IDBase(par_kind,par_id,1));/**关于这个1是随便写的，只是不想再写一个构造函数了*/
+            //id_temp.addFun_par(new IDBase(par_kind,par_id,1));/**关于这个1是随便写的，只是不想再写一个构造函数了*/
             ids.add(new IDBase(par_kind,par_id,1,true));//同时将这些变量加入到总的变量表中去
         }
-        TokenTree fun_main=tempRoot.get(2);
+        TokenTree fun_main=tempRoot.get(2);//函数主题
         is_return=false;
         new_semantic(fun_main,kind);
         if(is_return){
@@ -210,7 +211,12 @@ public class semanticAnalysis {
                     continue;
                 }
                 String kind=temp.get(0).getContent();
-                ids.add(new IDBase(kind,name,true));
+                IDBase temp_id=new IDBase(kind,name,true);
+                TokenTree fun_par=temp.get(1);
+                for(int counter=0;counter<fun_par.getChildSize();counter++){
+                    temp_id.addFun_par(new Dim(fun_par.get(counter).getContent(),fun_par.get(counter).get(0).getContent()));
+                }
+                ids.add(temp_id);
             }
             else if(temp.getKind().equals("finish")){
 
@@ -221,30 +227,36 @@ public class semanticAnalysis {
         }
     }
 
-    private void fun_call(TokenTree tempRoot,String kind){
-        String name=tempRoot.get(0).getContent();
+    private boolean fun_call(TokenTree tempRoot,String kind){
+        String name=tempRoot.get(0).getContent();  //函数名字
         IDBase id_temp=findIDByName(name);
         if(id_temp==null){
             addError("调用了并不存在的函数"+name);
-            return;
+            return false;
         }
-        int goal_par_num=id_temp.getFun_par().size();
+        String return_kind=id_temp.getKind();
+        if(kind==null){
+            //过
+        }
+        else if(!typeCompatibility(kind,return_kind)){
+            addError("函数返回值与调用者的所需类型不兼容");
+            return false;
+        }
+
+        int goal_par_num=id_temp.getFun_par().size();//真实参数个数
         int real_par_num=tempRoot.getChildSize()-1;/**建一是因为第一个子节点是调用的函数的名字*/
         if(goal_par_num!=real_par_num){
             addError("关于函数"+name+"的调用参数数量不符");
-            return;
+            return false;
         }
         for(int i=0;i<goal_par_num;i++){
             TokenTree temp_express=tempRoot.get(i+1);
             if(!express_type_check(temp_express,id_temp.getFun_par().get(i).getKind())){
                 addError("关于函数"+name+"的调用第"+(i+1)+"个参数数据类型不兼容");
+                return false;
             }
         }
-        if(kind!=null){
-            if(!typeCompatibility(kind,id_temp.getKind())){
-                addError("在调用函数"+id_temp.getName()+"时候类型不兼容");
-            }
-        }
+        return true;
     }
 
     private void read_sem(TokenTree temp){
@@ -297,6 +309,9 @@ public class semanticAnalysis {
             else if(!id.getIsInit()){
                 addError("使用了未初始化的标识符"+id.getName());
             }
+        }
+        else if(express_type_check(write_temp,"int")||express_type_check(write_temp,"bool")||express_type_check(write_temp,"real")||express_type_check(write_temp,"string")){
+
         }
         else{
             addError("暂不支持除标识符之外的其他形式的输出");
@@ -369,7 +384,20 @@ public class semanticAnalysis {
         if(id_assign.hasChildren()){
             //TODO 数组是由先整体赋过值之后，才能个别再赋值
             //TODO 数组应当先整体赋值
+            int length=id_assign.getChildSize();//这个length指的是数组的维数
             IDBase id_temp_assign=findIDByName(id_assign.getContent());
+            if(length!=id_temp_assign.getArr_dim()){
+                addError("在为数组某一项赋值的时候，对数组的引用的维数与声明的不符");
+                return;
+            }
+            for(int counter=0;counter<id_assign.getChildSize();counter++){
+                if(type_int_check(id_assign.get(counter))){
+                    continue;
+                }
+                else{
+                    addError("对数组的赋值中下标的使用没有使用int类型");
+                }
+            }
             if(!id_temp_assign.getIsArr()){
                 addError("把非数组变量"+id_assign.getContent()+"当作数组变量赋值了");
                 return;
@@ -378,71 +406,75 @@ public class semanticAnalysis {
                 addError("对于数组变量"+id_assign.getContent()+"只有对其整体赋值之后才能个别赋值");
                 return;
             }
-            TokenTree id_assign_array_length=id_assign.get(0);
-            if(id_assign_array_length.getKind().equals("运算符")){
-                if(express_type_check(id_assign_array_length,"int")){
-                    findIDByName(id_assign.getContent()).setIsInit(true);
-                }
-            }
-            else if(id_assign_array_length.getContent().equals("int")){
-                findIDByName(id_assign.getContent()).setIsInit(true);
-            }
-            else if(id_assign_array_length.getKind().equals("标识符")){
-                /**这里应该用那个函数的*/
-                if(isExist(id_assign_array_length.getContent())){
-                    IDBase temp_id=findIDByName(id_assign_array_length.getContent());
-                    String kind_temp_id=temp_id.getKind();
-                    boolean is_init=temp_id.getIsInit();
-                    if(!is_init){
-                        addError("使用了初始化的标识符"+id_assign_array_length.getContent());
-                    }else if(!typeCompatibility("int",kind_temp_id)){
-                        addError("使用了不是int的标识符"+id_assign_array_length.getContent()+"作为数组下标");
-                    }
-                    else{
-                        findIDByName(id_assign.getContent()).setIsInit(true);
-                        //将标识符设置为初始化了，无论之前是否初始化过
-                    }
-                }
-                else{
-                    addError("使用了未声明的标识符"+id_assign_array_length.getContent());
-                }
-            }
-            else if(id_assign_array_length.getContent().equals("call")&&id_assign_array_length.getKind().equals("关键字")){
-                IDBase id_temp=findIDByName(id_assign_array_length.get(0).getContent());
-                if(!id_temp.getKind().equals("int")){
-                    addError("使用了返回值不是int的函数"+id_assign_array_length.get(0).getContent()+"作为数组下标");
-                }
-            }
+            /**下面这部分暂且注释1123**/
+//            TokenTree id_assign_array_length=id_assign.get(0);
+//            if(id_assign_array_length.getKind().equals("运算符")){
+//                if(express_type_check(id_assign_array_length,"int")){
+//                    findIDByName(id_assign.getContent()).setIsInit(true);
+//                }
+//            }
+//            else if(id_assign_array_length.getContent().equals("int")){
+//                findIDByName(id_assign.getContent()).setIsInit(true);
+//            }
+//            else if(id_assign_array_length.getKind().equals("标识符")){
+//                /**这里应该用那个函数的*/
+//                if(isExist(id_assign_array_length.getContent())){
+//                    IDBase temp_id=findIDByName(id_assign_array_length.getContent());
+//                    String kind_temp_id=temp_id.getKind();
+//                    boolean is_init=temp_id.getIsInit();
+//                    if(!is_init){
+//                        addError("使用了初始化的标识符"+id_assign_array_length.getContent());
+//                    }else if(!typeCompatibility("int",kind_temp_id)){
+//                        addError("使用了不是int的标识符"+id_assign_array_length.getContent()+"作为数组下标");
+//                    }
+//                    else{
+//                        findIDByName(id_assign.getContent()).setIsInit(true);
+//                        //将标识符设置为初始化了，无论之前是否初始化过
+//                    }
+//                }
+//                else{
+//                    addError("使用了未声明的标识符"+id_assign_array_length.getContent());
+//                }
+//            }
+//            else if(id_assign_array_length.getContent().equals("call")&&id_assign_array_length.getKind().equals("关键字")){
+//                IDBase id_temp=findIDByName(id_assign_array_length.get(0).getContent());
+//                if(!id_temp.getKind().equals("int")){
+//                    addError("使用了返回值不是int的函数"+id_assign_array_length.get(0).getContent()+"作为数组下标");
+//                }
+//            }
             TokenTree id_assign_array_one_init=assign.get(1);//这个是等号后面的
-            if(id_assign_array_one_init.getKind().equals("标识符")){
-                //if(useID(id_assign_array_one_init.getContent(),kind)){ TODO
-                if(useID(id_assign_array_one_init,kind)){
-                    findIDByName(id_assign.getContent()).setIsInit(true);
-                }
-                else{
-                    addError("使用了不合理的标识符来初始化"+kind+"类型的数组");
-                }
-            }
-            else if(id_assign_array_one_init.getKind().equals("运算符")){
-                if(express_type_check(id_assign_array_one_init,kind)){
-                    findIDByName(id_assign.getContent()).setIsInit(true);
-                }
-                else{
-                    addError("使用了不合理的算术表达式来初始化"+kind+"类型的数组");
-                }
-            }
-            else if(id_assign_array_one_init.getContent().equals("call")&&id_assign_array_one_init.getKind().equals("关键字")){
-                IDBase id_temp=findIDByName(id_assign_array_one_init.get(0).getContent());
-                if(!id_temp.getKind().equals(kind)){
-                    addError("使用了返回值不符合的函数"+id_assign_array_one_init.get(0).getContent()+"作为赋值");
-                }
-            }
-            else if(typeCompatibility(kind,id_assign_array_one_init.getKind())){
-                findIDByName(id_assign.getContent()).setIsInit(true);
-            }
-            else{
+            if(!express_type_check(id_assign_array_one_init,kind)){
                 addError("使用了不合理表达式来初始化"+kind+"类型的数组");
             }
+//            if(id_assign_array_one_init.getKind().equals("标识符")){
+//                //if(useID(id_assign_array_one_init.getContent(),kind)){ TODO
+//                if(useID(id_assign_array_one_init,kind)){
+//                    findIDByName(id_assign.getContent()).setIsInit(true);
+//                }
+//                else{
+//                    addError("使用了不合理的标识符来初始化"+kind+"类型的数组");
+//                }
+//            }
+//            else if(id_assign_array_one_init.getKind().equals("运算符")){
+//                if(express_type_check(id_assign_array_one_init,kind)){
+//                    findIDByName(id_assign.getContent()).setIsInit(true);
+//                }
+//                else{
+//                    addError("使用了不合理的算术表达式来初始化"+kind+"类型的数组");
+//                }
+//            }
+//            else if(id_assign_array_one_init.getContent().equals("call")&&id_assign_array_one_init.getKind().equals("关键字")){
+//                IDBase id_temp=findIDByName(id_assign_array_one_init.get(0).getContent());
+//                if(!id_temp.getKind().equals(kind)){
+//                    addError("使用了返回值不符合的函数"+id_assign_array_one_init.get(0).getContent()+"作为赋值");
+//                }
+//            }
+//            else if(typeCompatibility(kind,id_assign_array_one_init.getKind())){
+//                findIDByName(id_assign.getContent()).setIsInit(true);
+//            }
+//            else{
+//                addError("使用了不合理表达式来初始化"+kind+"类型的数组");
+//            }
         }
         else{
             TokenTree id_init=assign.get(1);
@@ -466,34 +498,41 @@ public class semanticAnalysis {
                     addError("对于变量"+id_assign.getContent()+"采用了不合理的赋值方式");
                 }
                 else{
-                    if(id_init.getKind().equals("标识符")){
-                        //if(useID(id_init.getContent(),kind)){
-                        if(useID(id_init,kind)){
-                            //TODO 这里应当添加用数组的某一项为其赋值的情况，包括声明的那个地方也应当改一下，15日凌晨写，望白天能改
-                            findIDByName(id_assign.getContent()).setIsInit(true);
-                        }
-                        else{
-                            addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
-                        }
-                    }
-                    else if(id_init.getKind().equals("运算符")){
-                        if(express_type_check(id_init,kind)){
-                            findIDByName(id_assign.getContent()).setIsInit(true);
-                        }
-                        else{
-                            addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
-                        }
-                    }
-                    else if(id_init.getKind().equals("关键字")&&id_init.getContent().equals("call")){
-                        fun_call(id_init,id_temp.getKind());
-                        System.out.println("kjnknkbnkj");
-                    }
-                    else if(typeCompatibility(kind,id_init.getKind())){
-                        findIDByName(id_assign.getContent()).setIsInit(true);
+                    if(express_type_check(id_init,kind)){
+                        id_temp.setIsInit(true);
+                        return;
                     }
                     else{
-                        addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+                        addError("对变量的不合理的赋值");
                     }
+//                    if(id_init.getKind().equals("标识符")){
+//                        //if(useID(id_init.getContent(),kind)){
+//                        if(useID(id_init,kind)){
+//                            //TODO 这里应当添加用数组的某一项为其赋值的情况，包括声明的那个地方也应当改一下，15日凌晨写，望白天能改
+//                            findIDByName(id_assign.getContent()).setIsInit(true);
+//                        }
+//                        else{
+//                            addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+//                        }
+//                    }
+//                    else if(id_init.getKind().equals("运算符")){
+//                        if(express_type_check(id_init,kind)){
+//                            findIDByName(id_assign.getContent()).setIsInit(true);
+//                        }
+//                        else{
+//                            addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+//                        }
+//                    }
+//                    else if(id_init.getKind().equals("关键字")&&id_init.getContent().equals("call")){
+//                        fun_call(id_init,id_temp.getKind());
+//                        System.out.println("kjnknkbnkj");
+//                    }
+//                    else if(typeCompatibility(kind,id_init.getKind())){
+//                        findIDByName(id_assign.getContent()).setIsInit(true);
+//                    }
+//                    else{
+//                        addError("对变量"+id_assign+"的赋值采用了不合理的数据类型");
+//                    }
                 }
             }
         }
@@ -516,57 +555,77 @@ public class semanticAnalysis {
                     continue;
                 }
                 if(one_id.hasChildren()){
-                    TokenTree one_id_array_length=one_id.get(0);
+                    for(int counter_dim=0;counter_dim<one_id.getChildSize();counter_dim++){
+                        TokenTree one_id_array_length=one_id.get(counter_dim);
+                        if(type_int_check(one_id_array_length)){
+                            continue;
+                        }
+                        else{
+                            addError("关于数组"+one_id.getContent()+"的声明第"+(counter_dim+1)+"维的下标没有使用int类型");
+                        }
+                    }
+                    //TokenTree one_id_array_length=one_id.get(0);
                     TokenTree one_id_array_init=one_declare.get(1);
-                    if(!express_type_check_array_init(one_id_array_init,kind)){
+                    if(one_id_array_init.getContent().equals("#")){
+
+                    }
+                    else if(!express_type_check_array_init(one_id_array_init,kind)){
                         addError("关于"+one_id.getContent()+"数组的初始化中数据类型不匹配");
                         continue;
                     }
-                    if(one_id_array_length.getKind().equals("int")){
-                        ids.add(new IDBase(kind,one_id.getContent(),2,true));
-                    }
-                    else if(one_id_array_length.getKind().equals("运算符")){
-                        if(express_type_check(one_id_array_length,"int")){
-                            ids.add(new IDBase(kind,one_id.getContent(),2,true));
-                        }
-                        else{
-                            addError(one_id.getContent()+"的声明中数组长度不合法");
-                        }
-                    }
-                    else{/**不允许使用标识符声明数组长度*/
-                        addError(one_id.getContent()+"的声明中数组长度不合法");
-                    }
+                    ids.add(new IDBase(kind,one_id.getContent(),true,one_id.getChildSize()));
+//                    if(one_id_array_length.getKind().equals("int")){
+//                        ids.add(new IDBase(kind,one_id.getContent(),2,true));
+//                    }
+//                    else if(one_id_array_length.getKind().equals("运算符")){
+//                        if(express_type_check(one_id_array_length,"int")){
+//                            ids.add(new IDBase(kind,one_id.getContent(),2,true));
+//                        }
+//                        else{
+//                            addError(one_id.getContent()+"的声明中数组长度不合法");
+//                        }
+//                    }
+//                    else{/**不允许使用标识符声明数组长度*/
+//                        addError(one_id.getContent()+"的声明中数组长度不合法");
+//                    }
                 }
                 else{
                     TokenTree one_init=one_declare.get(1);
-                    if(one_init.getKind().equals("运算符")){
-                        if(express_type_check(one_init,kind)){
-                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
-                        }
-                        else{
-                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
-                        }
-                    }
-                    else if(one_init.getContent().equals("call")){
-                        fun_call(one_init,kind);
-                    }
-                    else if(one_init.getKind().equals("标识符")){
-                        //if(useID(one_init.getContent(),kind)){ //TODO
-                        if(useID(one_init,kind)){
-                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
-                        }
-                        else{
-                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
-                        }
+                    if(express_type_check(one_init,kind)){
+                        ids.add(new IDBase(kind,one_id.getContent(),1,true));
+                        continue;
                     }
                     else{
-                        if(!typeCompatibility(kind,one_init.getKind())){
-                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
-                        }
-                        else{
-                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
-                        }
+                        addError("哗啦哗啦又错了");
                     }
+//                    if(one_init.getKind().equals("运算符")){
+//                        if(express_type_check(one_init,kind)){
+//                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
+//                        }
+//                        else{
+//                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
+//                        }
+//                    }
+//                    else if(one_init.getContent().equals("call")){
+//                        fun_call(one_init,kind);
+//                    }
+//                    else if(one_init.getKind().equals("标识符")){
+//                        //if(useID(one_init.getContent(),kind)){ //TODO
+//                        if(useID(one_init,kind)){
+//                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
+//                        }
+//                        else{
+//                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
+//                        }
+//                    }
+//                    else{
+//                        if(!typeCompatibility(kind,one_init.getKind())){
+//                            addError("关于"+one_id.getContent()+"的初始化类型不兼容");
+//                        }
+//                        else{
+//                            ids.add(new IDBase(kind,one_id.getContent(),1,true));
+//                        }
+//                    }
                 }
             }/**只声明了*/
             else if(one_declare.getKind().equals("标识符")){
@@ -579,21 +638,32 @@ public class semanticAnalysis {
                     continue;
                 }
                 if(one_declare.hasChildren()){
-                    TokenTree one_id_array_length=one_declare.get(0);
-                    if(one_id_array_length.getKind().equals("int")){
-                        ids.add(new IDBase(kind,one_declare.getContent(),2));
-                    }
-                    else if(one_id_array_length.getKind().equals("运算符")){
-                        if(express_type_check(one_id_array_length,"int")){
-                            ids.add(new IDBase(kind,one_declare.getContent(),2));
+                    //这里已经改为多维数组了
+                    for(int counter_dim=0;counter_dim<one_declare.getChildSize();counter_dim++){
+                        TokenTree one_id_array_length=one_declare.get(counter_dim);
+                        if(one_id_array_length.getKind().equals("int")){
+                            //ids.add(new IDBase(kind,one_declare.getContent(),2));
+                            continue;
                         }
-                        else{
+                        else if(one_id_array_length.getKind().equals("运算符")){
+                            if(express_type_check(one_id_array_length,"int")){
+                                //ids.add(new IDBase(kind,one_declare.getContent(),2));
+                                continue;
+                            }
+                            else{
+                                addError(one_declare.getContent()+"的声明中数组长度不合法");
+                            }
+                        }
+                        else if(one_id_array_length.getKind().equals("标识符")){
+                            //TODO 暂设为不合法，待补充
+                            addError(one_declare.getContent()+"的声明中数组长度不合法");
+                        }
+                        else{/**不允许使用标识符声明数组长度*/
                             addError(one_declare.getContent()+"的声明中数组长度不合法");
                         }
                     }
-                    else{/**不允许使用标识符声明数组长度*/
-                        addError(one_declare.getContent()+"的声明中数组长度不合法");
-                    }
+                    ids.add(new IDBase(kind,one_declare.getContent(),false,one_declare.getChildSize()));
+
                 }
                 else{
                     ids.add(new IDBase(kind,one_declare.getContent(),1));
@@ -686,6 +756,9 @@ public class semanticAnalysis {
                 return false;
             }
         }
+        else if(express_string.getKind().equals("关键字")&&express_string.getContent().equals("call")){
+            return fun_call(express_string,"string");
+        }
         else{
             return false;
         }
@@ -713,6 +786,9 @@ public class semanticAnalysis {
                 return false;
             }
         }
+        else if(express_bool.getKind().equals("关键字")&&express_bool.getContent().equals("call")){
+            return fun_call(express_bool,"bool");
+        }
         else if(express_bool.getKind().equals("bool")&&(express_bool.getContent().equals("false")||express_bool.getContent().equals("true"))){
             return true;
         }
@@ -723,25 +799,31 @@ public class semanticAnalysis {
 
     private boolean type_real_check(TokenTree express_real){
         if(express_real.getKind().equals("标识符")){
-            if(express_real.hasChildren()){
-                //if(!useID(express_real.getContent(),"real")){
-                if(!useID(express_real,"real")){
-                    //addError("标识符"+express_int.getContent()+"不存在");
-                    return false;
-                }
-                if(express_type_check(express_real.get(0),"int")){
-                    addLog("asasas");/**????????这是啥玩意**/
-                }
-                else{
-                    return false;
-                }
+            if(useID(express_real,"real")){
+                return true;
             }
             else{
-                //if(!useID(express_real.getContent(),"real")){
-                if(!useID(express_real,"real")){
-                    return false;
-                }
+                return false;
             }
+//            if(express_real.hasChildren()){
+//                //if(!useID(express_real.getContent(),"real")){
+//                if(!useID(express_real,"real")){
+//                    //addError("标识符"+express_int.getContent()+"不存在");
+//                    return false;
+//                }
+//                if(express_type_check(express_real.get(0),"int")){
+//                    addLog("asasas");/**????????这是啥玩意**/
+//                }
+//                else{
+//                    return false;
+//                }
+//            }
+//            else{
+//                //if(!useID(express_real.getContent(),"real")){
+//                if(!useID(express_real,"real")){
+//                    return false;
+//                }
+//            }
         }
         else if(express_real.getKind().equals("real")||express_real.getKind().equals("int")){
             return true;
@@ -749,33 +831,42 @@ public class semanticAnalysis {
         else if(express_real.getKind().equals("运算符")&&isArithmetic(express_real)){
             return (type_real_check(express_real.get(0))&&type_real_check(express_real.get(1)));
         }
+        else if(express_real.getKind().equals("关键字")&&express_real.getContent().equals("call")){
+            return fun_call(express_real,"real");
+        }
         else {
             return false;
         }
-        return true;
+        //return true;
     }
 
     private boolean type_int_check(TokenTree express_int){
         if(express_int.getKind().equals("标识符")){
-            if(express_int.hasChildren()){
-                //if(!useID(express_int.getContent(),"int")){
-                if(!useID(express_int,"int")){
-                    //addError("标识符"+express_int.getContent()+"不存在");
-                    return false;
-                }
-                if(express_type_check(express_int.get(0),"int")){
-                    addLog("asasas");
-                }
-                else{
-                    return false;
-                }
+            if(useID(express_int,"int")){
+                return true;
             }
             else{
-                //if(!useID(express_int.getContent(),"int")){
-                if(!useID(express_int,"int")){
-                    return false;
-                }
+                return false;
             }
+//            if(express_int.hasChildren()){
+//                //if(!useID(express_int.getContent(),"int")){
+//                if(!useID(express_int,"int")){
+//                    //addError("标识符"+express_int.getContent()+"不存在");
+//                    return false;
+//                }
+//                if(express_type_check(express_int.get(0),"int")){
+//                    addLog("asasas");
+//                }
+//                else{
+//                    return false;
+//                }
+//            }
+//            else{
+//                //if(!useID(express_int.getContent(),"int")){
+//                if(!useID(express_int,"int")){
+//                    return false;
+//                }
+//            }
         }
         else if(express_int.getKind().equals("int")){
             return true;
@@ -783,10 +874,13 @@ public class semanticAnalysis {
         else if(express_int.getKind().equals("运算符")&&isArithmetic(express_int)){
             return (type_int_check(express_int.get(0))&&type_int_check(express_int.get(1)));
         }
+        else if(express_int.getKind().equals("关键字")&&express_int.getContent().equals("call")){
+            return fun_call(express_int,"int");
+        }
         else{
             return false;
         }
-        return true;
+        //return true;
     }
 
     private void removeID(int start, int counter){
@@ -828,19 +922,38 @@ public class semanticAnalysis {
         if(useID(name,kind)){
             IDBase temp_id=findIDByName(name);
             boolean isArr=temp_id.getIsArr();
+            int dim=temp_id.getArr_dim();//这个代表维数
             if(temp.hasChildren()){
                 if(!isArr){
                     addError("把非数组变量"+temp_id.getName()+"当作数组变量使用");
                     return false;
                 }
-                if(type_int_check(temp.get(0))){
-                    return true;
-                }
-                else{
+                if(dim!=temp.getChildSize()){
+                    addError("对数组的使用长度不合理，下标个数不够");
                     return false;
                 }
+                else{
+                    for(int counter=0;counter<dim;counter++){
+                        TokenTree temp_dim=temp.get(counter);
+                        if(!type_int_check(temp_dim)){
+                            addError("对数组的使用中对其下标不是整型变量");
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+//                if(type_int_check(temp.get(0))){
+//                    return true;
+//                }
+//                else{
+//                    return false;
+//                }
             }
             else{
+                if(isArr){
+                    addError("把数组变量"+temp_id.getName()+"当作非数组变量使用");
+                    return false;
+                }
                 return true;
             }
         }else{

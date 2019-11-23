@@ -78,8 +78,8 @@ public class semAnalysis {
                     if(length!=init.size()){
                         return new BaseError("数组实例化的长度与声明的长度不符");
                     }
-                    ID tempID=new ID(kind,temp.get(0).getContent(),true,length,init);
-                    id.add(tempID);
+                    //ID tempID=new ID(kind,temp.get(0).getContent(),true,length,init);
+                    //id.add(tempID);
                 }
                 //普通的声明初始化
                 else{

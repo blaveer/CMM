@@ -420,6 +420,12 @@ public class LexAnalysis {
                     ch=lineText.charAt(index);
                 }
             }
+            else if(ch=='#'){
+                tokens.add(new Token(line,index,"关键字","#"));
+                displayTokens.add(new Token(line,index,"关键字","#"));
+                index++;
+                ch=lineText.charAt(index);
+            }
             else{
                 displayTokens.add(new Token(line ,index+1,"错误",String.valueOf(ch)));
                 errorNum++;

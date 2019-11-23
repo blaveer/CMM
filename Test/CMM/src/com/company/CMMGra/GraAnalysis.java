@@ -281,7 +281,6 @@ public class GraAnalysis {
         counter++;
         currentToken=tokens.get(counter);
         if(!is_state){
-
             return fun_call;
         }
         if(currentToken.getContent().equals(";")){
@@ -637,8 +636,8 @@ public class GraAnalysis {
         }
         else{
             while_main.children.add(statement());
-            counter++;
-            currentToken=tokens.get(counter);
+//            counter++;
+//            currentToken=tokens.get(counter);
         }
         isCir--;
         while_token.children.add(while_main);
@@ -697,8 +696,8 @@ public class GraAnalysis {
         }//如果没有大括号
         else{
             for_main.children.add(statement());
-            counter++;
-            currentToken=tokens.get(counter);
+//            counter++;
+//            currentToken=tokens.get(counter);
         }
         isCir--;
         forTemp.children.add(for_main);
@@ -729,16 +728,30 @@ public class GraAnalysis {
                 currentToken=tokens.get(counter);//此时如果是【，那就是数组，如果是=那就是赋值，如果是，那就是连续赋值，如果是；那就是结束了
                 if(currentToken.getKind().equals("LMB")){
                     //temp.children.add(new TokenTree("LMB","["));
-                    counter++;
-                    currentToken=tokens.get(counter);
-                    temp.children.add(express_stm());
-                    if(currentToken.getKind().equals("RMB")){
-                        //temp.children.add(new TokenTree("RMB","]"));
+                    while(currentToken.getKind().equals("LMB")){
                         counter++;
                         currentToken=tokens.get(counter);
-                    }else{
-                        addError(currentToken.getLine(),currentToken.getCulomn(),"缺少】");
+                        temp.children.add(express_stm());
+                        if(currentToken.getKind().equals("RMB")){
+                            //temp.children.add(new TokenTree("RMB","]"));
+                            counter++;
+                            currentToken=tokens.get(counter);
+                        }else{
+                            addError(currentToken.getLine(),currentToken.getCulomn(),"缺少】");
+                        }
                     }
+                    //TODO 为方便起见，这里并没有设置很复杂的多维数组声明，只要总数够了，就在{}中挨个声明就好
+                    //TODO 1123
+//                    counter++;
+//                    currentToken=tokens.get(counter);
+//                    temp.children.add(express_stm());
+//                    if(currentToken.getKind().equals("RMB")){
+//                        //temp.children.add(new TokenTree("RMB","]"));
+//                        counter++;
+//                        currentToken=tokens.get(counter);
+//                    }else{
+//                        addError(currentToken.getLine(),currentToken.getCulomn(),"缺少】");
+//                    }
                     //数组声明完成
                     if(currentToken.getContent().equals("=")) {
                         TokenTree ass = new TokenTree("运算符", "=");
@@ -749,23 +762,44 @@ public class GraAnalysis {
                             counter++;
                             currentToken=tokens.get(counter);
                         }
+                        /**下面这条语句为简单起见,将数组的初始化放在文件中*/
+                        else if(currentToken.getKind().equals("关键字")&&currentToken.getContent().equals("#")){
+                            counter++;
+                            currentToken=tokens.get(counter);
+                            TokenTree array_token=new TokenTree("关键字","#");
+                            ass.children.add(array_token);
+                            dec.children.add(ass);
+                            if (currentToken.getContent().equals(";")) {
+                                counter++;
+                                currentToken = tokens.get(counter);
+                                break;
+                            } else if (currentToken.getContent().equals(",")) {
+                                counter++;
+                                currentToken = tokens.get(counter);
+                                continue;
+                            } else {
+                                addError(currentToken.getLine(), currentToken.getCulomn(), "缺少；");
+                                break;
+                            }
+                        }
                         else{
                             addError(currentToken.getLine(),currentToken.getCulomn(),"数组赋值缺少{");
                         }
                         TokenTree array_token=new TokenTree("关键字","AllArrayInit");
-                        array_token.children.add(express_stm());
+
                         //下面这段代码做过大的改动
 //                        counter++;
 //                        currentToken=tokens.get(counter);
-                        while(!currentToken.getKind().equals("RBB")){
-                            counter++;
-                            currentToken=tokens.get(counter);
-                            array_token.children.add(express_stm());//这个地方在11月10日做过改动，
+                        while(true){//!currentToken.getKind().equals("RBB")
+                            array_token.children.add(express_stm());
+//                            counter++;
+//                            currentToken=tokens.get(counter);
+//                            array_token.children.add(express_stm());//这个地方在11月10日做过改动，
 //                            counter++;
 //                            currentToken=tokens.get(counter);
                             if(currentToken.getContent().equals(",")){
-//                                counter++;
-//                                currentToken=tokens.get(counter);
+                                counter++;
+                                currentToken=tokens.get(counter);
                                 continue;
                             }
                             else if(currentToken.getKind().equals("RBB")){
@@ -884,9 +918,21 @@ public class GraAnalysis {
             currentToken=tokens.get(counter);
         }
         else if(currentToken.getKind().equals("LMB")) {
+            while(currentToken.getKind().equals("LMB")){
+                counter++;
+                currentToken=tokens.get(counter);
+                tag.children.add(express_stm());
+                if(currentToken.getKind().equals("RMB")){
+                    counter++;
+                    currentToken=tokens.get(counter);
+                }
+                else{
+                    addError(currentToken,"缺少右中括号");
+                }
+            }
             //此时应该指向的是[
-            counter++;
-            currentToken=tokens.get(counter);
+//            counter++;
+//            currentToken=tokens.get(counter);
             /**这里做过修改，将【】不再作为标识符的子节点，而是将仅仅将数组的下标加入标识符的子节点了
              * 也就是说，如果标识符没有子节点的话，也就意味着其只是一个标识符。
              * 如果有子节点的话，也就是数组的标识符了
@@ -898,18 +944,18 @@ public class GraAnalysis {
             //tag.children.add(new TokenTree("LMB","["));
 //            counter++;
 //            currentToken=tokens.get(counter);
-            tag.children.add(express_stm());//理应每个函数结束的时候会读取下一个token
+            //tag.children.add(express_stm());//理应每个函数结束的时候会读取下一个token
             //TODO 这个不读很可能是个巨大的BUG
 //            counter++; //【 】中间的完成了，这个应该是】了
 //            currentToken=tokens.get(counter);
-            if(currentToken.getKind().equals("RMB")){
-                //tag.children.add(new TokenTree("RMB","]"));
-                counter++;
-                currentToken=tokens.get(counter);
-            }
-            else{
-                addError(currentToken.getLine(),currentToken.getCulomn(),"缺少】");
-            }
+//            if(currentToken.getKind().equals("RMB")){
+//                //tag.children.add(new TokenTree("RMB","]"));
+//                counter++;
+//                currentToken=tokens.get(counter);
+//            }
+//            else{
+//                addError(currentToken.getLine(),currentToken.getCulomn(),"缺少】");
+//            }
 //            counter++;
 //            currentToken=tokens.get(counter);
             if(currentToken.getContent().equals("=")){
@@ -925,7 +971,7 @@ public class GraAnalysis {
             addError(currentToken.getLine(),currentToken.getCulomn(),"缺少=");
         }
 
-        //这里来写一下数组赋值的问题
+        //这里来写一下数组赋值的问题，这里是整体赋值
         if(currentToken.getKind().equals("LBB")){
             TokenTree array_token=new TokenTree("关键字","AllArrayInit");
             counter++;
@@ -1057,21 +1103,32 @@ public class GraAnalysis {
             //tempNode = new TokenTree("标识符", currentToken.getContent());
             counter++;
             currentToken=tokens.get(counter);
-            if (currentToken != null
-                    && currentToken.getContent().equals("[")) {
+            if (currentToken != null && currentToken.getContent().equals("[")) {
                 //tempNode.add(array());
                 //TODO 如果监测到数组，还需要再进入数组里面
-                counter++;
-                currentToken=tokens.get(counter);
-                tempNode_ID.children.add(express_stm());
-                if(currentToken!=null&&currentToken.getContent().equals("]")){
+                while(currentToken.getContent().equals("[")){
                     counter++;
                     currentToken=tokens.get(counter);
-                }else{
-                    addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右中括号");
+                    tempNode_ID.children.add(express_stm());
+                    if(currentToken!=null&&currentToken.getContent().equals("]")){
+                        counter++;
+                        currentToken=tokens.get(counter);
+                    }else{
+                        addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右中括号");
+                    }
                 }
+//                counter++;
+//                currentToken=tokens.get(counter);
+//                tempNode_ID.children.add(express_stm());
+//                if(currentToken!=null&&currentToken.getContent().equals("]")){
+//                    counter++;
+//                    currentToken=tokens.get(counter);
+//                }else{
+//                    addError(currentToken.getLine(),currentToken.getCulomn(),"缺少右中括号");
+//                }
             }
             else if(currentToken!=null&&currentToken.getContent().equals("(")){
+                //这里写过函数调用
                 counter++;
                 currentToken=tokens.get(counter);
                 tempNode=function_call_stm(fun_name,false);
@@ -1270,6 +1327,11 @@ public class GraAnalysis {
     private void addError(int line,int culomn,String narrate){
         errorNum++;
         errorInfo=errorInfo+"第"+line+"行第"+culomn+"列"+narrate+"\n";
+    }
+
+
+    private void addError(Token t,String n){
+        addError(t.getLine(),t.getCulomn(),n);
     }
 
 
