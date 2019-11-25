@@ -74,6 +74,7 @@ public class LexAnalysis {
                     index++;
                     ch= lineText.charAt(index);
                     if(ch=='-'){//理论上来时所有的负数都要有小括号括起来
+                        displayTokens.add(new Token(line,index,"LLB","("));
                         int start=index;  //从这个负号开始
                         int end;
                         boolean err=false;
@@ -116,6 +117,7 @@ public class LexAnalysis {
                                 errorInfo=errorInfo+error;
                             }
                         }
+                        displayTokens.add(new Token(line,index,"RLB",")"));
                     }
                     else{
                         displayTokens.add(new Token(line,index+1,"LLB","("));

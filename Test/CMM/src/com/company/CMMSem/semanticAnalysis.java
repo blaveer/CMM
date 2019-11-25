@@ -655,14 +655,20 @@ public class semanticAnalysis {
                             }
                         }
                         else if(one_id_array_length.getKind().equals("标识符")){
-                            //TODO 暂设为不合法，待补充
-                            addError(one_declare.getContent()+"的声明中数组长度不合法");
+                            IDBase id_temp_t=findIDByName(one_id_array_length.getContent());
+                            if(useID(one_id_array_length,"int")){
+                                //TODO 通过了
+                            }
+                            else{
+                                addError(one_declare.getContent()+"的声明中数组长度不合法");
+                            }
+
                         }
                         else{/**不允许使用标识符声明数组长度*/
                             addError(one_declare.getContent()+"的声明中数组长度不合法");
                         }
                     }
-                    ids.add(new IDBase(kind,one_declare.getContent(),false,one_declare.getChildSize()));
+                    ids.add(new IDBase(kind,one_declare.getContent(),true,one_declare.getChildSize()));
 
                 }
                 else{

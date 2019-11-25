@@ -467,11 +467,13 @@ public class RunAnalysis {
                 if(one_declare.hasChildren()){
                     int sum_length=1;
                     ArrayList<Integer> dim=new ArrayList<>();
+                    ArrayList<String> arr_init=new ArrayList<>();
                     for(int counter_dim=0;counter_dim<one_declare.getChildSize();counter_dim++){
                         TokenTree one_id_array_length=one_declare.get(0);
                         int length=run_int_result(one_id_array_length);
                         sum_length*=length;
                         dim.add(length);
+                        //arr_init.add("0");
                         if(length<0){
                             addError("关于标识符"+one_declare.getContent()+"的初始化的长度小于零");
                             return false;
@@ -483,7 +485,11 @@ public class RunAnalysis {
 //                        addError("关于标识符"+one_declare.getContent()+"的标识的长度小于零");
 //                        return false;
 //                    }
-                    ids.add(new ID(kind,one_declare.getContent(),true,dim,sum_length));
+                    for(int i_c=0;i_c<sum_length;i_c++){
+                        arr_init.add("0");
+                    }
+                    //System.out.println(arr_init.size()+"lkdjlsjdl");
+                    ids.add(new ID(kind,one_declare.getContent(),true,dim,sum_length,arr_init));
                 }
                 else{
                     ids.add(new ID(kind,one_declare.getContent()));
@@ -495,10 +501,16 @@ public class RunAnalysis {
 
     private String run_try(TokenTree t){
         try {
+            return run_all_result(t,"int");
+        }catch (Exception ex){
+
+        }
+        try {
             return run_all_result(t,"real");
         }catch (Exception ex){
 
-        }try {
+        }
+        try {
             return run_all_result(t,"bool");
         }catch (Exception ex){
 
@@ -648,7 +660,13 @@ public class RunAnalysis {
             return log_inverter_arithmetic(String.valueOf(run_bool_result(temp.get(0))));
         }
         else if(is_compare(temp.getContent())){
-            return com_arithmetic(String.valueOf(run_real_result(temp.get(0))),String.valueOf(run_real_result(temp.get(1))),temp.getContent());
+            boolean temp_b=false;
+            try {
+                return com_arithmetic(String.valueOf(run_int_result(temp.get(0))),String.valueOf(run_int_result(temp.get(1))),temp.getContent());
+            }catch (Exception ex){
+                return com_arithmetic(String.valueOf(run_real_result(temp.get(0))),String.valueOf(run_real_result(temp.get(1))),temp.getContent());
+            }
+
         }
         else if(temp.getKind().equals("标识符")){
             ID id_temp=findIDByName(temp.getContent());
